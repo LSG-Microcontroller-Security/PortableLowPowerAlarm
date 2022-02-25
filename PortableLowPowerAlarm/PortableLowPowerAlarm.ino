@@ -16,8 +16,6 @@ float measure = 0;
 uint8_t voltagePin = A2;
 
 
-
-
 void setup()
 {
 	mySerial.begin(19200);
@@ -35,10 +33,11 @@ void setup()
 	setup_watchdog(9); // approximately 4 seconds sleep
 	attachInterrupt(0, activateSystemInterrupt, FALLING);
 
+	nullCommand();
 	mySerial.println(F("AT+CPMS=\"SM\""));
-
+	nullCommand();
 	mySerial.println(F("AT+CMGF=1"));
-
+	nullCommand();
 	mySerial.println(F("AT+CMGD=1,4"));
 
 	//blinkLed(100,5);
@@ -49,7 +48,10 @@ void setup()
 	{
 		phoneNumber.concat((char)eeprom_read_byte((uint8_t*)i));
 	}
+	nullCommand();
 	callPhoneNumber(phoneNumber);
+	nullCommand();
+	mySerial.println(F("AT+CSCLK=2"));
 }
 
 void activateSystemInterrupt()
@@ -73,23 +75,6 @@ void loop()
 	{
 		sms();
 	}
-
-	//uint8_t index = 0;
-	//delay(1000);
-	//String phoneNumber = "";
-	//char a = {'\0'};
-	//while (a != '\r')
-	//{
-	//	a = (char)eeprom_read_byte((uint8_t*)index);
-	//	phoneNumber.concat(a);
-	//	//a = (char)eeprom_read_byte((uint8_t*)index);
-	//	//mySerial.print(phoneNumber);
-	//	index++;
-	//}
-	//mySerial.print(phoneNumber);
-	//mySerial.println();
-	//return;
-
 	if (sy == true)
 	{
 		/*blinkLed(500,1);*/
@@ -109,7 +94,7 @@ void loop()
 		{
 			phoneNumber.concat((char)eeprom_read_byte((uint8_t*)i));
 		}
-
+		nullCommand();
 		callPhoneNumber(phoneNumber);
 	}
 	if (millis() - timer > 60000)
@@ -148,18 +133,20 @@ void loop()
 void sms()
 {
 	String response = "";
-	if (mySerial.available() > 0)
+	/*if (mySerial.available() > 0)
 	{
 		while (mySerial.available() > 0) {
 			response.concat((char)mySerial.read());
 		}
 	}
-	response = "";
-	mySerial.println(F("AT+CMGL"));
+	response = "";*/
+	nullCommand();
+	mySerial.println(F("AT+CMGR=1"));
 	delay(2000);
 	if (mySerial.available() > 0)
 	{
 		while (mySerial.available() > 0) {
+			response.concat((char)mySerial.read());
 			response.concat((char)mySerial.read());
 		}
 		delay(500);
@@ -173,6 +160,7 @@ void sms()
 				eeprom_write_byte((uint8_t*)i, phoneNumber[i]);
 				//mySerial.println(phoneNumber[i]);
 			}
+			nullCommand();
 			callPhoneNumber(phoneNumber);
 		}
 		index = response.lastIndexOf(F("&"));
@@ -269,6 +257,11 @@ ISR(WDT_vect) {
 	else {
 		watchDogCounter++;
 	}
+}
+
+void nullCommand()
+{
+	mySerial.println(F("AT"));
 }
 
 
