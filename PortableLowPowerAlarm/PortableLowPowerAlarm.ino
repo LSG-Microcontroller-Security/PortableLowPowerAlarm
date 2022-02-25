@@ -35,23 +35,23 @@ void setup()
 
 	nullCommand();
 	mySerial.println(F("AT+CPMS=\"SM\""));
-	nullCommand();
+	
 	mySerial.println(F("AT+CMGF=1"));
-	nullCommand();
+	
 	mySerial.println(F("AT+CMGD=1,4"));
 
-	//blinkLed(100,5);
+	mySerial.readString();
 
 	String phoneNumber = "";
-
 	for (uint8_t i = 0; i < 10; i++)
 	{
 		phoneNumber.concat((char)eeprom_read_byte((uint8_t*)i));
 	}
-	nullCommand();
+	
 	callPhoneNumber(phoneNumber);
-	nullCommand();
+	delay(5000);
 	mySerial.println(F("AT+CSCLK=2"));
+	
 }
 
 void activateSystemInterrupt()
@@ -75,7 +75,7 @@ void loop()
 	{
 		sms();
 	}
-	if (sy == true)
+	if ((sy == true) && (millis() > 60000))
 	{
 		/*blinkLed(500,1);*/
 		if (digitalRead(transistorPin) != HIGH)
@@ -85,17 +85,21 @@ void loop()
 		}
 		timer = millis();
 		sy = false;
-		mySerial.readString();
-		delay(100);
 
+		nullCommand();
+		delay(1000);
+		mySerial.readString();
+		
 		String phoneNumber = "";
 
 		for (uint8_t i = 0; i < 10; i++)
 		{
 			phoneNumber.concat((char)eeprom_read_byte((uint8_t*)i));
 		}
-		nullCommand();
+
 		callPhoneNumber(phoneNumber);
+
+		delay(5000);
 	}
 	if (millis() - timer > 60000)
 	{
@@ -105,8 +109,16 @@ void loop()
 			//mySerial.print("meausere = "); mySerial.println(measure);
 			if (measure < 3.25)
 			{
-				turnOn();
-				delay(10000);
+				if (digitalRead(transistorPin) != HIGH)
+				{
+					turnOn();
+					delay(20000);
+				}
+
+				nullCommand();
+				delay(1000);
+				mySerial.readString();
+
 				String phoneNumber = "";
 
 				for (uint8_t i = 0; i < 10; i++)
@@ -168,6 +180,7 @@ void sms()
 		{
 			/*blinkLed(1000, 1);*/
 			isOnPowerSafe = false;
+			//mySerial.println(F("entrato!"));
 		}
 		/*index = response.lastIndexOf(F("%"));
 		if (index != -1)
