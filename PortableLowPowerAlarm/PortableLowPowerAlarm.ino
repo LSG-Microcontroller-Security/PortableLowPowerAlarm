@@ -12,7 +12,6 @@ bool isOnPowerSafe = true;
 bool isWatchDogCicle = false;
 uint8_t watchDogCounter = 0;
 bool isWatchDogEvent = false;
-float measure = 0;
 uint8_t voltagePin = A2;
 
 
@@ -51,7 +50,13 @@ void setup()
 	callPhoneNumber(phoneNumber);
 	delay(5000);
 	mySerial.println(F("AT+CSCLK=2"));
+	analogReference(DEFAULT);
 	
+}
+
+void setIncomingSMS()
+{
+
 }
 
 void activateSystemInterrupt()
@@ -105,6 +110,8 @@ void loop()
 	{
 		if (isWatchDogEvent)
 		{
+			float measure = 0;
+
 			measure = (5.1 / 1024) * analogRead(voltagePin);
 			//mySerial.print("meausere = "); mySerial.println(measure);
 			if (measure < 3.25)
@@ -262,7 +269,7 @@ void setup_watchdog(int ii) {
 
 ISR(WDT_vect) {
 	isWatchDogCicle = true;
-	if (watchDogCounter == 2)
+	if (watchDogCounter == 35)
 	{
 		isWatchDogEvent = true;
 		watchDogCounter = 0;
