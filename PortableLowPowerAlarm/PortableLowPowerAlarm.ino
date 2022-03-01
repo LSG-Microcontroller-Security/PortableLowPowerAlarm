@@ -2,7 +2,7 @@
 #include <avr/sleep.h>
 #include <avr/power.h>
 
-SoftwareSerial mySerial(0, 3);
+
 unsigned long timer = 0;
 uint8_t interruptPin = 2;
 //uint8_t ledPin = 0;
@@ -17,6 +17,8 @@ uint8_t voltagePin = A2;
 
 void setup()
 {
+	SoftwareSerial mySerial(0, 3);
+	delay(1000);
 	mySerial.begin(19200);
 	//pinMode(ledPin, OUTPUT);
 	pinMode(transistorPin, OUTPUT);
@@ -32,16 +34,12 @@ void setup()
 	setup_watchdog(9); // approximately 4 seconds sleep
 	attachInterrupt(0, activateSystemInterrupt, FALLING);
 
-	nullCommand();
-	mySerial.println(F("AT+CPMS=\"SM\""));
-	
-	mySerial.println(F("AT+CMGF=1"));
-	
-	mySerial.println(F("AT+CMGD=1,4"));
+	setSMSIncoming();
 
-	mySerial.readString();
+	deleteBuffer();
 
 	String phoneNumber = "";
+
 	for (uint8_t i = 0; i < 10; i++)
 	{
 		phoneNumber.concat((char)eeprom_read_byte((uint8_t*)i));
@@ -49,14 +47,32 @@ void setup()
 	
 	callPhoneNumber(phoneNumber);
 	delay(5000);
-	mySerial.println(F("AT+CSCLK=2"));
+	setSleepMode();
 	analogReference(DEFAULT);
 	
 }
 
-void setIncomingSMS()
+void setSleepMode()
 {
+	SoftwareSerial mySerial(0, 3);
+	mySerial.println(F("AT+CSCLK=2"));
+}
 
+void setSMSIncoming()
+{
+	SoftwareSerial mySerial(0, 3);
+	nullCommand();
+	mySerial.println(F("AT+CPMS=\"SM\""));
+
+	mySerial.println(F("AT+CMGF=1"));
+
+	mySerial.println(F("AT+CMGD=1,4"));
+}
+
+void deleteBuffer() {
+	SoftwareSerial mySerial(0, 3);
+	delay(1000);
+	mySerial.readString();
 }
 
 void activateSystemInterrupt()
@@ -93,7 +109,8 @@ void loop()
 
 		nullCommand();
 		delay(1000);
-		mySerial.readString();
+
+		deleteBuffer();
 		
 		String phoneNumber = "";
 
@@ -124,7 +141,7 @@ void loop()
 
 				nullCommand();
 				delay(1000);
-				mySerial.readString();
+				deleteBuffer();
 
 				String phoneNumber = "";
 
@@ -151,6 +168,7 @@ void loop()
 
 void sms()
 {
+	SoftwareSerial mySerial(0, 3);
 	String response = "";
 	/*if (mySerial.available() > 0)
 	{
@@ -233,6 +251,8 @@ void enter_sleep()
 
 void callPhoneNumber(String phoneNumber)
 {
+	SoftwareSerial mySerial(0, 3);
+	delay(1000);
 	mySerial.print(F("atd")); mySerial.print(phoneNumber); mySerial.println(F(";"));
 }
 
@@ -281,6 +301,7 @@ ISR(WDT_vect) {
 
 void nullCommand()
 {
+	SoftwareSerial mySerial(0, 3);
 	mySerial.println(F("AT"));
 }
 
