@@ -2,7 +2,6 @@
 #include <avr/sleep.h>
 #include <avr/power.h>
 
-
 unsigned long timer = 0;
 uint8_t interruptPin = 2;
 //uint8_t ledPin = 0;
@@ -14,19 +13,12 @@ uint8_t watchDogCounter = 0;
 bool isWatchDogEvent = false;
 uint8_t voltagePin = A2;
 
-
 void setup()
 {
-	SoftwareSerial mySerial(0, 3);
-	delay(1000);
-	mySerial.begin(19200);
-	//pinMode(ledPin, OUTPUT);
 	pinMode(transistorPin, OUTPUT);
 	pinMode(interruptPin, INPUT_PULLUP);
 	turnOn();
 	delay(20000);
-	//}
-	//mySerial.println("restart");
 	timer = millis();
 	PCMSK |= bit(PCINT2);  // want pin D3 / pin 2
 	GIFR |= bit(PCIF);    // clear any outstanding interrupts
@@ -34,9 +26,15 @@ void setup()
 	setup_watchdog(9); // approximately 4 seconds sleep
 	attachInterrupt(0, activateSystemInterrupt, FALLING);
 
-	setSMSIncoming();
+	delete (sendAtCommand(F("AT"), 100));
 
-	deleteBuffer();
+	delete (sendAtCommand(F("AT+CPMS=\"SM\""), 100));
+
+	delete (sendAtCommand(F("AT+CMGF=1"), 100));
+
+	delete (sendAtCommand(F("AT+CMGD=1,4"), 100));
+
+	clearBuffer();
 
 	String phoneNumber = "";
 
@@ -44,35 +42,13 @@ void setup()
 	{
 		phoneNumber.concat((char)eeprom_read_byte((uint8_t*)i));
 	}
-	
+
 	callPhoneNumber(phoneNumber);
-	delay(5000);
-	setSleepMode();
+
+	delete(sendAtCommand(F("AT+CSCLK=2"), 100));
+
 	analogReference(DEFAULT);
 	
-}
-
-void setSleepMode()
-{
-	SoftwareSerial mySerial(0, 3);
-	mySerial.println(F("AT+CSCLK=2"));
-}
-
-void setSMSIncoming()
-{
-	SoftwareSerial mySerial(0, 3);
-	nullCommand();
-	mySerial.println(F("AT+CPMS=\"SM\""));
-
-	mySerial.println(F("AT+CMGF=1"));
-
-	mySerial.println(F("AT+CMGD=1,4"));
-}
-
-void deleteBuffer() {
-	SoftwareSerial mySerial(0, 3);
-	delay(1000);
-	mySerial.readString();
 }
 
 void activateSystemInterrupt()
@@ -96,9 +72,8 @@ void loop()
 	{
 		sms();
 	}
-	if ((sy == true) && (millis() > 60000))
+	if ((sy == true) && (millis() > 90000))
 	{
-		/*blinkLed(500,1);*/
 		if (digitalRead(transistorPin) != HIGH)
 		{
 			turnOn();
@@ -107,10 +82,11 @@ void loop()
 		timer = millis();
 		sy = false;
 
-		nullCommand();
+		delete(sendAtCommand(F("AT"), 100));
+
 		delay(1000);
 
-		deleteBuffer();
+		clearBuffer();
 		
 		String phoneNumber = "";
 
@@ -123,7 +99,7 @@ void loop()
 
 		delay(5000);
 	}
-	if (millis() - timer > 60000)
+	if (millis() - timer > 90000)
 	{
 		if (isWatchDogEvent)
 		{
@@ -139,9 +115,11 @@ void loop()
 					delay(20000);
 				}
 
-				nullCommand();
+				sendAtCommand(F("AT"), 100);
+
 				delay(1000);
-				deleteBuffer();
+
+				clearBuffer();
 
 				String phoneNumber = "";
 
@@ -168,7 +146,6 @@ void loop()
 
 void sms()
 {
-	SoftwareSerial mySerial(0, 3);
 	String response = "";
 	/*if (mySerial.available() > 0)
 	{
@@ -177,16 +154,18 @@ void sms()
 		}
 	}
 	response = "";*/
-	nullCommand();
-	mySerial.println(F("AT+CMGR=1"));
-	delay(2000);
-	if (mySerial.available() > 0)
+	delete(sendAtCommand(F("AT"), 100));
+	SoftwareSerial* sf = sendAtCommand(F("AT+CMGR=1"), 2000);
+	if (sf->available() > 0)
 	{
-		while (mySerial.available() > 0) {
-			response.concat((char)mySerial.read());
-			response.concat((char)mySerial.read());
+		//sf->println("primo");
+		while (sf->available() > 0) {
+			response.concat((char)sf->read());
+			response.concat((char)sf->read());
 		}
+		delete(sf);
 		delay(500);
+		delete(sendAtCommand(response, 100));
 		int index = response.lastIndexOf(F("#"));
 		if (index != -1)
 		{
@@ -197,7 +176,7 @@ void sms()
 				eeprom_write_byte((uint8_t*)i, phoneNumber[i]);
 				//mySerial.println(phoneNumber[i]);
 			}
-			nullCommand();
+			delete(sendAtCommand(F("AT") , 100));
 			callPhoneNumber(phoneNumber);
 		}
 		index = response.lastIndexOf(F("&"));
@@ -205,7 +184,7 @@ void sms()
 		{
 			/*blinkLed(1000, 1);*/
 			isOnPowerSafe = false;
-			//mySerial.println(F("entrato!"));
+			//delete(sendAtCommand(F("entrato!"),100));
 		}
 		/*index = response.lastIndexOf(F("%"));
 		if (index != -1)
@@ -217,17 +196,15 @@ void sms()
 	}
 }
 
-//void blinkLed(uint8_t speed, uint8_t cicle)
-//{
-//	return;
-//	for (uint8_t i = 0; i <= cicle; i++)
-//	{
-//		digitalWrite(0, HIGH);
-//		delay(speed);
-//		digitalWrite(0, LOW);
-//		delay(speed);
-//	}
-//}
+SoftwareSerial* sendAtCommand(String command,unsigned long timeDelay)
+{
+	SoftwareSerial* mySerial = new SoftwareSerial(0, 3);
+	mySerial->begin(19200);
+	delay(100);
+	mySerial->println(command);
+	delay(timeDelay);
+	return mySerial;
+}
 
 void enter_sleep()
 {
@@ -251,23 +228,18 @@ void enter_sleep()
 
 void callPhoneNumber(String phoneNumber)
 {
-	SoftwareSerial mySerial(0, 3);
-	delay(1000);
-	mySerial.print(F("atd")); mySerial.print(phoneNumber); mySerial.println(F(";"));
+	String command = "atd";
+	command.concat(phoneNumber);
+	command.concat(';');
+	delete(sendAtCommand(command, 5000));
 }
 
-//	cli();
-//	sleep_enable();
-//	set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-//	//adcsra = ADCSRA;               //save the ADC Control and Status Register A
-//	mySerial.print("adcsra before = "); mySerial.println(ADCSRA, HEX);
-//	//ADCSRA = 0;                    //disable ADC
-//	sei();
-//	sleep_cpu();                   //go to sleep
-//	sleep_disable();               //wake up here
-//	//ADCSRA = adcsra;               //restore ADCSRA
-//	mySerial.print("adcsra after = "); mySerial.println(ADCSRA, HEX);
-//}
+void clearBuffer() {
+	SoftwareSerial mySerial(0, 3);
+	mySerial.begin(19200);
+	delay(1000);
+	mySerial.readString();
+}
 
 void setup_watchdog(int ii) {
 
@@ -299,11 +271,6 @@ ISR(WDT_vect) {
 	}
 }
 
-void nullCommand()
-{
-	SoftwareSerial mySerial(0, 3);
-	mySerial.println(F("AT"));
-}
 
 
 
