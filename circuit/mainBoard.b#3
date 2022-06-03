@@ -230,6 +230,7 @@
 <rectangle x1="68" y1="37.6" x2="69" y2="42" layer="16"/>
 <rectangle x1="63.6" y1="59" x2="67.2" y2="61.8" layer="16"/>
 <rectangle x1="66.2" y1="61.8" x2="67" y2="81.8" layer="16"/>
+<dimension x1="25.2" y1="31" x2="73.6" y2="31" x3="49.4" y3="14.6" textsize="1.778" layer="16"/>
 </plain>
 <libraries>
 <library name="con-lstb">
