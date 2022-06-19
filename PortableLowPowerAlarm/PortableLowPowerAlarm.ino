@@ -7,7 +7,7 @@ uint8_t interruptPin = 2;
 //uint8_t ledPin = 0;
 uint8_t transistorPin = 1;
 volatile bool sy = false;
-bool isOnPowerSafe = true;
+bool isOnPowerSafe = false;
 bool isWatchDogCicle = false;
 uint8_t watchDogCounter = 0;
 bool isWatchDogEvent = false;
@@ -23,10 +23,12 @@ void setup()
 	PCMSK |= bit(PCINT2);  // want pin D3 / pin 2
 	GIFR |= bit(PCIF);    // clear any outstanding interrupts
 	GIMSK |= bit(PCIE);    // enable pin change interrupts
-	setup_watchdog(9); // approximately 4 seconds sleep
+	//setup_watchdog(9); // approximately 4 seconds sleep
 	attachInterrupt(0, activateSystemInterrupt, FALLING);
 
 	delete (sendAtCommand(F("AT"), 100));
+
+	delete (sendAtCommand(F("AT+CNETLIGHT= 0"), 1000));
 
 	delete (sendAtCommand(F("AT+CPMS=\"SM\""), 100));
 
@@ -72,6 +74,7 @@ void loop()
 	{
 		sms();
 	}
+
 	if ((sy == true) && (millis() > 90000))
 	{
 		if (digitalRead(transistorPin) != HIGH)
@@ -101,44 +104,44 @@ void loop()
 	}
 	if (millis() - timer > 90000)
 	{
-		if (isWatchDogEvent)
-		{
-			float measure = 0;
+		//if (isWatchDogEvent)
+		//{
+		//	float measure = 0;
 
-			measure = (5.1 / 1024) * analogRead(voltagePin);
-			//mySerial.print("meausere = "); mySerial.println(measure);
-			if (measure < 3.25)
-			{
-				if (digitalRead(transistorPin) != HIGH)
-				{
-					turnOn();
-					delay(20000);
-				}
+		//	measure = (5.1 / 1024) * analogRead(voltagePin);
+		//	//mySerial.print("meausere = "); mySerial.println(measure);
+		//	if (measure < 3.25)
+		//	{
+		//		if (digitalRead(transistorPin) != HIGH)
+		//		{
+		//			turnOn();
+		//			delay(20000);
+		//		}
 
-				sendAtCommand(F("AT"), 100);
+		//		delete(sendAtCommand(F("AT"), 100));
 
-				delay(1000);
+		//		delay(1000);
 
-				clearBuffer();
+		//		clearBuffer();
 
-				String phoneNumber = "";
+		//		String phoneNumber = "";
 
-				for (uint8_t i = 0; i < 10; i++)
-				{
-					phoneNumber.concat((char)eeprom_read_byte((uint8_t*)i));
-				}
+		//		for (uint8_t i = 0; i < 10; i++)
+		//		{
+		//			phoneNumber.concat((char)eeprom_read_byte((uint8_t*)i));
+		//		}
 
-				callPhoneNumber(phoneNumber);
-				delay(15000);
-				turnOff();
-			}
-			isWatchDogEvent = false;
-		}
+		//		callPhoneNumber(phoneNumber);
+		//		delay(15000);
+		//		turnOff();
+		//	}
+		//	isWatchDogEvent = false;
+		//}
 		if (isOnPowerSafe)
 		{
 			turnOff();
 		}
-		isWatchDogCicle = false;
+		/*isWatchDogCicle = false;*/
 		enter_sleep();
 		delay(100);
 	}
@@ -194,6 +197,10 @@ void sms()
 		}*/
 
 	}
+	else
+	{
+		delete(sf);
+	}
 }
 
 SoftwareSerial* sendAtCommand(String command,unsigned long timeDelay)
@@ -228,7 +235,7 @@ void enter_sleep()
 
 void callPhoneNumber(String phoneNumber)
 {
-	String command = "atd";
+	String command = F("atd");
 	command.concat(phoneNumber);
 	command.concat(';');
 	delete(sendAtCommand(command, 5000));
@@ -241,35 +248,35 @@ void clearBuffer() {
 	mySerial.readString();
 }
 
-void setup_watchdog(int ii) {
+//void setup_watchdog(int ii) {
+//
+//	byte bb;
+//	int ww;
+//	if (ii > 9) ii = 9;
+//	bb = ii & 7;
+//	if (ii > 7) bb |= (1 << 5);
+//	bb |= (1 << WDCE);
+//	ww = bb;
+//
+//	MCUSR &= ~(1 << WDRF);
+//	// start timed sequence
+//	WDTCR |= (1 << WDCE) | (1 << WDE);
+//	// set new watchdog timeout value
+//	WDTCR = bb;
+//	WDTCR |= _BV(WDIE);
+//}
 
-	byte bb;
-	int ww;
-	if (ii > 9) ii = 9;
-	bb = ii & 7;
-	if (ii > 7) bb |= (1 << 5);
-	bb |= (1 << WDCE);
-	ww = bb;
-
-	MCUSR &= ~(1 << WDRF);
-	// start timed sequence
-	WDTCR |= (1 << WDCE) | (1 << WDE);
-	// set new watchdog timeout value
-	WDTCR = bb;
-	WDTCR |= _BV(WDIE);
-}
-
-ISR(WDT_vect) {
-	isWatchDogCicle = true;
-	if (watchDogCounter == 35)
-	{
-		isWatchDogEvent = true;
-		watchDogCounter = 0;
-	}
-	else {
-		watchDogCounter++;
-	}
-}
+//ISR(WDT_vect) {
+//	isWatchDogCicle = true;
+//	if (watchDogCounter == 35)
+//	{
+//		isWatchDogEvent = true;
+//		watchDogCounter = 0;
+//	}
+//	else {
+//		watchDogCounter++;
+//	}
+//}
 
 
 
