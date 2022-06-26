@@ -22,7 +22,7 @@ void setup()
 	pinMode(transistorPin, OUTPUT);
 	pinMode(interruptPin, INPUT_PULLUP);
 	turnOn();
-	delay(20000);
+	//delay(20000);
 	timer = millis();
 	PCMSK |= bit(PCINT2);  // want pin D3 / pin 2
 	GIFR |= bit(PCIF);    // clear any outstanding interrupts
@@ -31,6 +31,8 @@ void setup()
 	attachInterrupt(0, activateSystemInterrupt, FALLING);
 
 	delete (sendAtCommand(F("AT"), 100));
+
+	delete(sendAtCommand(String(freeRam()), 100));
 
 	delete (sendAtCommand(F("AT+CPMS=\"SM\""), 100));
 
@@ -55,9 +57,9 @@ void setup()
 
 	//delete (sendAtCommand(F("restart"), 1000));
 
-
-
 	analogReference(DEFAULT);
+
+	delete(sendAtCommand(String(freeRam()), 100));
 
 }
 
@@ -78,6 +80,7 @@ void turnOff()
 
 void loop()
 {
+	delete(sendAtCommand(String(freeRam()), 100));
 	if (millis() < 60000)
 	{
 		sms();
@@ -153,9 +156,10 @@ void loop()
 		delay(100);
 	}
 }
-
+byte check = 0;
 void sms()
 {
+	clearBuffer();
 	String response = "";
 	delete(sendAtCommand(F("AT"), 100));
 	SoftwareSerial* sf = sendAtCommand(F("AT+CMGR=1"), 2000);
@@ -168,15 +172,16 @@ void sms()
 		delete(sf);
 		delay(500);
 		int index = response.lastIndexOf(F("#"));
-		if (index != -1)
+		if (index != -1 && check == 0)
 		{
 			String phoneNumber = response.substring(index + 1, index + 11);
 			for (uint8_t i = 0; i < 10; i++)
 			{
 				eeprom_write_byte((uint8_t*)i, phoneNumber[i]);
 			}
+			check = 1;
 			//delete(sendAtCommand(F("AT"), 100));
-			callPhoneNumber(phoneNumber);
+			//callPhoneNumber(phoneNumber);
 		}
 		index = response.lastIndexOf(F("&"));
 		if (index != -1)
@@ -263,6 +268,12 @@ ISR(WDT_vect) {
 	else {
 		watchDogCounter++;
 	}
+}
+
+int freeRam() {
+	extern int __heap_start, * __brkval;
+	int v;
+	return (int)&v - (__brkval == 0 ? (int)&__heap_start : (int)__brkval);
 }
 
 
