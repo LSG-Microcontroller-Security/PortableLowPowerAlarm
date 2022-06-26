@@ -159,9 +159,9 @@ void loop()
 byte check = 0;
 void sms()
 {
-	clearBuffer();
 	String response = "";
-	delete(sendAtCommand(F("AT"), 100));
+	/*delete(sendAtCommand(F("AT"), 100));*/
+	clearBuffer();
 	SoftwareSerial* sf = sendAtCommand(F("AT+CMGR=1"), 2000);
 	if (sf->available() > 0)
 	{
