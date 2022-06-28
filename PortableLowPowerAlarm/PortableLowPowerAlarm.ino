@@ -81,6 +81,7 @@ void turnOff()
 void loop()
 {
 	delete(sendAtCommand(String(freeRam()), 100));
+
 	if (millis() < 60000)
 	{
 		sms();
@@ -160,38 +161,64 @@ byte check = 0;
 void sms()
 {
 	String response = "";
-	/*delete(sendAtCommand(F("AT"), 100));*/
-	clearBuffer();
-	SoftwareSerial* sf = sendAtCommand(F("AT+CMGR=1"), 2000);
-	if (sf->available() > 0)
+	SoftwareSerial mySerial(0, 3);
+	mySerial.begin(19200);
+	delay(1000);
+	mySerial.readString();
+	delay(1000);
+	mySerial.println("AT+CMGR=1");
+	delay(2000);
+
+	mySerial.readStringUntil('\r\n');
+	mySerial.readStringUntil('\r\n');
+	mySerial.readStringUntil('\r\n');
+
+	if (mySerial.available() > 0)
 	{
-		while (sf->available() > 0) {
-			response.concat((char)sf->read());
+		while (mySerial.available() > 0) {
+			response.concat((char)mySerial.read());
 		}
-		delay(1000);
-		delete(sf);
-		delay(500);
+		//mySerial.print("x"); mySerial.print(response); mySerial.println("x");
 		int index = response.lastIndexOf(F("#"));
 		if (index != -1 && check == 0)
 		{
 			String phoneNumber = response.substring(index + 1, index + 11);
+			//mySerial.print("phoneNumber :"); mySerial.println(phoneNumber);
+			bool verify = true;
+
 			for (uint8_t i = 0; i < 10; i++)
 			{
-				eeprom_write_byte((uint8_t*)i, phoneNumber[i]);
+				if (phoneNumber[i] < 48 && phoneNumber[i] > 57)
+				{
+					verify = false;
+				}
 			}
-			check = 1;
-			//delete(sendAtCommand(F("AT"), 100));
-			//callPhoneNumber(phoneNumber);
+
+			if (verify)
+			{
+				check = 1;
+
+				for (uint8_t i = 0; i < 10; i++)
+				{
+					if (phoneNumber[i] >= 48 && phoneNumber[i] <= 57)
+					{
+						eeprom_write_byte((uint8_t*)i, phoneNumber[i]);
+					}
+				}
+
+				String command = F("atd");
+				command.concat(phoneNumber);
+				command.concat(';');
+				mySerial.println(command);
+				delay(5000);
+			}
 		}
 		index = response.lastIndexOf(F("&"));
+
 		if (index != -1)
 		{
 			isOnPowerSafe = false;
 		}
-	}
-	else
-	{
-		delete(sf);
 	}
 }
 
