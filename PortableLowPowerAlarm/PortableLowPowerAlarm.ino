@@ -32,7 +32,7 @@ void setup()
 
 	delete (sendAtCommand(F("AT"), 100));
 
-	delete(sendAtCommand(String(freeRam()), 100));
+	//delete(sendAtCommand(String(freeRam()), 100));
 
 	delete (sendAtCommand(F("AT+CPMS=\"SM\""), 100));
 
@@ -59,7 +59,7 @@ void setup()
 
 	analogReference(DEFAULT);
 
-	delete(sendAtCommand(String(freeRam()), 100));
+	//delete(sendAtCommand(String(freeRam()), 100));
 
 }
 
@@ -80,12 +80,12 @@ void turnOff()
 
 void loop()
 {
-	delete(sendAtCommand(String(freeRam()), 100));
 
-	if (millis() < 60000)
+	if (millis() < 600000)
 	{
 		sms();
 	}
+
 	if ((sy == true) && (millis() > 90000))
 	{
 		if (digitalRead(transistorPin) != HIGH)
@@ -158,68 +158,166 @@ void loop()
 	}
 }
 byte check = 0;
-void sms()
+
+String getSmsWithParameter(char tag)
 {
 	String response = "";
 	SoftwareSerial mySerial(0, 3);
 	mySerial.begin(19200);
-	delay(1000);
-	mySerial.readString();
-	delay(1000);
-	mySerial.println("AT+CMGR=1");
 	delay(2000);
-
-	mySerial.readStringUntil('\r\n');
-	mySerial.readStringUntil('\r\n');
-	mySerial.readStringUntil('\r\n');
-
+	mySerial.println(F("AT+CMGR=1"));
+	delay(2000);
 	if (mySerial.available() > 0)
 	{
-		while (mySerial.available() > 0) {
-			response.concat((char)mySerial.read());
-		}
-		//mySerial.print("x"); mySerial.print(response); mySerial.println("x");
-		int index = response.lastIndexOf(F("#"));
-		if (index != -1 && check == 0)
+		response = mySerial.readStringUntil(tag);
+		if (response.length() > 0)
 		{
-			String phoneNumber = response.substring(index + 1, index + 11);
-			//mySerial.print("phoneNumber :"); mySerial.println(phoneNumber);
-			bool verify = true;
-
-			for (uint8_t i = 0; i < 10; i++)
+			if (mySerial.available() > 0)
 			{
-				if (phoneNumber[i] < 48 && phoneNumber[i] > 57)
-				{
-					verify = false;
-				}
+				return mySerial.readStringUntil(tag);
 			}
-
-			if (verify)
-			{
-				check = 1;
-
-				for (uint8_t i = 0; i < 10; i++)
-				{
-					if (phoneNumber[i] >= 48 && phoneNumber[i] <= 57)
-					{
-						eeprom_write_byte((uint8_t*)i, phoneNumber[i]);
-					}
-				}
-
-				String command = F("atd");
-				command.concat(phoneNumber);
-				command.concat(';');
-				mySerial.println(command);
-				delay(5000);
-			}
-		}
-		index = response.lastIndexOf(F("&"));
-
-		if (index != -1)
-		{
-			isOnPowerSafe = false;
 		}
 	}
+	return "";
+}
+
+bool checkPhoneNumber(String phoneNumber)
+{
+	if (phoneNumber.length() == 10)
+	{
+		for (uint8_t i = 0; i < phoneNumber.length(); i++)
+		{
+			if (phoneNumber[i] < 48 && phoneNumber[i] > 57)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+	else { return false; }
+}
+
+void sms()
+{
+	String phoneNumber = getSmsWithParameter('#');
+	if (checkPhoneNumber(phoneNumber) && check == 0)
+	{
+		check = 1;
+		for (uint8_t i = 0; i < phoneNumber.length(); i++)
+		{
+			eeprom_write_byte((uint8_t*)i, phoneNumber[i]);
+		}
+		String command = F("atd");
+		command.concat(phoneNumber);
+		command.concat(';');
+		delete(sendAtCommand(command, 100));
+	}
+
+	//String response = "";
+	//SoftwareSerial mySerial(0, 3);
+	//mySerial.begin(19200);
+	//delay(1000);
+	//mySerial.readString();
+	//delay(1000);
+	//mySerial.println("AT+CMGR=1");
+	//delay(2000);
+	//if (mySerial.available() > 0)
+	//{
+	//	response = mySerial.readStringUntil('#');
+	//	if (response.length() > 0)
+	//	{
+	//		if (mySerial.available() > 0)
+	//		{
+	//			String phoneNumber = mySerial.readString();
+	//			
+	//			bool verify = true;
+
+	//			for (uint8_t i = 0; i < 10; i++)
+	//			{
+	//				if (phoneNumber[i] < 48 && phoneNumber[i] > 57)
+	//				{
+	//					verify = false;
+	//				}
+	//			}
+	//			/*mySerial.println(freeRam());*/
+	//			//mySerial.println(phoneNumber);
+	//			//if (verify)
+	//			//{
+	//			//	mySerial.println("AT+CHUP");
+	//			//	delay(5000);
+	//			//	check = 1;
+	//			//	for (uint8_t i = 0; i < 10; i++)
+	//			//	{
+	//			//			//eeprom_write_byte((uint8_t*)i, response[i]);
+	//			//	}
+
+	//			//	String command = F("atd");
+	//			//	command.concat(phoneNumber);
+	//			//	command.concat(';');
+	//			//	mySerial.println(command);
+	//			//	delay(5000);
+	//			//}
+	//		}
+	//	}
+	//}
+	//return;
+
+	//if (mySerial.available() > 0)
+	//{
+	//	if (mySerial.readString().indexOf('#') != -1)
+	//	{
+	//		while (mySerial.available() > 0) {
+	//			response.concat((char)mySerial.read());
+	//		}
+	//		//mySerial.print("x"); mySerial.print(response); mySerial.println("x");
+	//	}
+
+
+
+	//	////int index = response.lastIndexOf(F("#"));
+	//	///*if (index != -1 && check == 0)*/
+	//	//if (check == 0)
+	//	//{
+	//	//	/*String phoneNumber = response.substring(index + 1, index + 11);*/
+	//	//	//mySerial.print("phoneNumber :"); mySerial.println(phoneNumber);
+	//	//	bool verify = true;
+
+	//	//	for (uint8_t i = 0; i < 10; i++)
+	//	//	{
+	//	//		if (response[i] < 48 && response[i] > 57)
+	//	//		{
+	//	//			verify = false;
+	//	//		}
+	//	//	}
+
+	//	//	if (verify)
+	//	//	{
+	//	//		mySerial.println("AT+CHUP");
+	//	//		delay(5000);
+	//	//		check = 1;
+
+	//	//		for (uint8_t i = 0; i < 10; i++)
+	//	//		{
+	//	//			if (response[i] >= 48 && response[i] <= 57)
+	//	//			{
+	//	//				//eeprom_write_byte((uint8_t*)i, response[i]);
+	//	//			}
+	//	//		}
+
+	//	//		String command = F("atd");
+	//	//		command.concat(response);
+	//	//		command.concat(';');
+	//	//		mySerial.println(command);
+	//	//		delay(5000);
+	//	//	}
+	//	//}
+	//	int index = response.lastIndexOf(F("&"));
+
+	//	if (index != -1)
+	//	{
+	//		isOnPowerSafe = false;
+	//	}
+	//}
 }
 
 SoftwareSerial* sendAtCommand(String command, unsigned long timeDelay)
@@ -254,6 +352,7 @@ void enter_sleep()
 
 void callPhoneNumber(String phoneNumber)
 {
+	/*delete(sendAtCommand("AT+CHUP", 2000));*/
 	String command = F("atd");
 	command.concat(phoneNumber);
 	command.concat(';');
