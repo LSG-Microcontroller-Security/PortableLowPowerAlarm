@@ -22,7 +22,7 @@ void setup()
 	pinMode(transistorPin, OUTPUT);
 	pinMode(interruptPin, INPUT_PULLUP);
 	turnOn();
-	//delay(20000);
+	delay(20000);
 	timer = millis();
 	PCMSK |= bit(PCINT2);  // want pin D3 / pin 2
 	GIFR |= bit(PCIF);    // clear any outstanding interrupts
