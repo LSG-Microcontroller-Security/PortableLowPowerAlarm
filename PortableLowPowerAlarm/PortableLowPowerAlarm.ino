@@ -22,7 +22,7 @@ void setup()
 	pinMode(transistorPin, OUTPUT);
 	pinMode(interruptPin, INPUT_PULLUP);
 	turnOn();
-	delay(20000);
+	//delay(20000);
 	timer = millis();
 	PCMSK |= bit(PCINT2);  // want pin D3 / pin 2
 	GIFR |= bit(PCIF);    // clear any outstanding interrupts
@@ -51,7 +51,12 @@ void setup()
 		phoneNumber.concat((char)eeprom_read_byte((uint8_t*)i));
 	}
 
-	callPhoneNumber(phoneNumber);
+	//callPhoneNumber(phoneNumber);
+
+	String command = F("atd");
+	command.concat(phoneNumber);
+	command.concat(';');
+	delete(sendAtCommand(command, 100));
 
 	delete(sendAtCommand(F("AT+CSCLK=2"), 100));
 
@@ -83,9 +88,8 @@ void loop()
 
 	if (millis() < 60000)
 	{
-		sms();
+		smsPhone();
 	}
-
 	if ((sy == true) && (millis() > 90000))
 	{
 		if (digitalRead(transistorPin) != HIGH)
@@ -109,7 +113,11 @@ void loop()
 			phoneNumber.concat((char)eeprom_read_byte((uint8_t*)i));
 		}
 
-		callPhoneNumber(phoneNumber);
+		//callPhoneNumber(phoneNumber);
+		String command = F("atd");
+		command.concat(phoneNumber);
+		command.concat(';');
+		delete(sendAtCommand(command, 100));
 
 		delay(5000);
 	}
@@ -142,7 +150,12 @@ void loop()
 					phoneNumber.concat((char)eeprom_read_byte((uint8_t*)i));
 				}
 
-				callPhoneNumber(phoneNumber);
+				//callPhoneNumber(phoneNumber);
+				String command = F("atd");
+				command.concat(phoneNumber);
+				command.concat(';');
+				delete(sendAtCommand(command, 100));
+
 				delay(15000);
 				turnOff();
 			}
@@ -197,10 +210,22 @@ bool checkPhoneNumber(String phoneNumber)
 	else { return false; }
 }
 
-void sms()
+
+void smsPower()
+{
+	String powerSafe = getSmsWithParameter('&');
+	if (powerSafe.length() > 0 && check == 0)
+	{
+		check = 1;
+		delete(sendAtCommand("Y", 100));
+		isOnPowerSafe = true;
+	}
+}
+
+void smsPhone()
 {
 	String phoneNumber = getSmsWithParameter('#');
-	
+	delete(sendAtCommand(phoneNumber, 100));
 	if (checkPhoneNumber(phoneNumber) && check == 0)
 	{
 		delete(sendAtCommand(F("AT+CHUP"), 3000));
@@ -214,11 +239,7 @@ void sms()
 		command.concat(';');
 		delete(sendAtCommand(command, 100));
 	}
-	//String powerSafe = getSmsWithParameter('&');
-	//if (powerSafe.length() > 0)
-	//{
-	//	isOnPowerSafe = true;
-	//}
+
 
 	//String response = "";
 	//SoftwareSerial mySerial(0, 3);
