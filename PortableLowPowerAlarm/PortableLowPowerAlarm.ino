@@ -22,7 +22,7 @@ void setup()
 	pinMode(transistorPin, OUTPUT);
 	pinMode(interruptPin, INPUT_PULLUP);
 	turnOn();
-	//delay(20000);
+	delay(20000);
 	timer = millis();
 	PCMSK |= bit(PCINT2);  // want pin D3 / pin 2
 	GIFR |= bit(PCIF);    // clear any outstanding interrupts
@@ -81,7 +81,7 @@ void turnOff()
 void loop()
 {
 
-	if (millis() < 600000)
+	if (millis() < 60000)
 	{
 		sms();
 	}
@@ -200,8 +200,10 @@ bool checkPhoneNumber(String phoneNumber)
 void sms()
 {
 	String phoneNumber = getSmsWithParameter('#');
+	
 	if (checkPhoneNumber(phoneNumber) && check == 0)
 	{
+		delete(sendAtCommand(F("AT+CHUP"), 3000));
 		check = 1;
 		for (uint8_t i = 0; i < phoneNumber.length(); i++)
 		{
@@ -212,6 +214,11 @@ void sms()
 		command.concat(';');
 		delete(sendAtCommand(command, 100));
 	}
+	//String powerSafe = getSmsWithParameter('&');
+	//if (powerSafe.length() > 0)
+	//{
+	//	isOnPowerSafe = true;
+	//}
 
 	//String response = "";
 	//SoftwareSerial mySerial(0, 3);
