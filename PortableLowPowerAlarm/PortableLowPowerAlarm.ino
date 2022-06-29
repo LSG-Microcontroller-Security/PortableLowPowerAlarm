@@ -32,8 +32,6 @@ void setup()
 
 	delete (sendAtCommand(F("AT"), 100));
 
-	//delete(sendAtCommand(String(freeRam()), 100));
-
 	delete (sendAtCommand(F("AT+CPMS=\"SM\""), 100));
 
 	delete (sendAtCommand(F("AT+CMGF=1"), 100));
@@ -51,8 +49,6 @@ void setup()
 		phoneNumber.concat((char)eeprom_read_byte((uint8_t*)i));
 	}
 
-	//callPhoneNumber(phoneNumber);
-
 	String command = F("atd");
 	command.concat(phoneNumber);
 	command.concat(';');
@@ -60,11 +56,7 @@ void setup()
 
 	delete(sendAtCommand(F("AT+CSCLK=2"), 100));
 
-	//delete (sendAtCommand(F("restart"), 1000));
-
 	analogReference(DEFAULT);
-
-	//delete(sendAtCommand(String(freeRam()), 100));
 
 }
 
@@ -89,6 +81,7 @@ void loop()
 	if (millis() < 60000)
 	{
 		smsPhone();
+		smsPower();
 	}
 	if ((sy == true) && (millis() > 90000))
 	{
@@ -174,7 +167,6 @@ byte check = 0;
 
 String getSmsWithParameter(char tag)
 {
-	String response = "";
 	SoftwareSerial mySerial(0, 3);
 	mySerial.begin(19200);
 	delay(2000);
@@ -182,8 +174,7 @@ String getSmsWithParameter(char tag)
 	delay(2000);
 	if (mySerial.available() > 0)
 	{
-		response = mySerial.readStringUntil(tag);
-		if (response.length() > 0)
+		if (mySerial.readStringUntil(tag).length() > 0)
 		{
 			if (mySerial.available() > 0)
 			{
@@ -209,7 +200,6 @@ bool checkPhoneNumber(String phoneNumber)
 	}
 	else { return false; }
 }
-
 
 void smsPower()
 {
