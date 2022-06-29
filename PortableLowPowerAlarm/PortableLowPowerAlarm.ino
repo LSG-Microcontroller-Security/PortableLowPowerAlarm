@@ -49,10 +49,7 @@ void setup()
 		phoneNumber.concat((char)eeprom_read_byte((uint8_t*)i));
 	}
 
-	String command = F("atd");
-	command.concat(phoneNumber);
-	command.concat(';');
-	delete(sendAtCommand(command, 100));
+	callPhoneNumber(phoneNumber);
 
 	delete(sendAtCommand(F("AT+CSCLK=2"), 100));
 
@@ -106,12 +103,8 @@ void loop()
 			phoneNumber.concat((char)eeprom_read_byte((uint8_t*)i));
 		}
 
-		//callPhoneNumber(phoneNumber);
-		String command = F("atd");
-		command.concat(phoneNumber);
-		command.concat(';');
-		delete(sendAtCommand(command, 100));
-
+		callPhoneNumber(phoneNumber);
+	
 		delay(5000);
 	}
 	if (millis() - timer > 90000)
@@ -143,11 +136,8 @@ void loop()
 					phoneNumber.concat((char)eeprom_read_byte((uint8_t*)i));
 				}
 
-				//callPhoneNumber(phoneNumber);
-				String command = F("atd");
-				command.concat(phoneNumber);
-				command.concat(';');
-				delete(sendAtCommand(command, 100));
+				callPhoneNumber(phoneNumber);
+			
 
 				delay(15000);
 				turnOff();
@@ -215,19 +205,14 @@ void smsPower()
 void smsPhone()
 {
 	String phoneNumber = getSmsWithParameter('#');
-	delete(sendAtCommand(phoneNumber, 100));
 	if (checkPhoneNumber(phoneNumber) && check == 0)
 	{
-		delete(sendAtCommand(F("AT+CHUP"), 3000));
 		check = 1;
 		for (uint8_t i = 0; i < phoneNumber.length(); i++)
 		{
 			eeprom_write_byte((uint8_t*)i, phoneNumber[i]);
 		}
-		String command = F("atd");
-		command.concat(phoneNumber);
-		command.concat(';');
-		delete(sendAtCommand(command, 100));
+		callPhoneNumber(phoneNumber);
 	}
 
 
@@ -370,7 +355,7 @@ void enter_sleep()
 
 void callPhoneNumber(String phoneNumber)
 {
-	/*delete(sendAtCommand("AT+CHUP", 2000));*/
+	delete(sendAtCommand("AT+CHUP", 3000));
 	String command = F("atd");
 	command.concat(phoneNumber);
 	command.concat(';');
