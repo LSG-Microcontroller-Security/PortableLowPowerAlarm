@@ -8,14 +8,14 @@
 
 unsigned long timer = 0;
 uint8_t interruptPin = 2;
-//uint8_t ledPin = 0;
 uint8_t transistorPin = 1;
-volatile bool sy = false;
+volatile bool tiltSensorInterrupt = false;
 bool isOnPowerSafe = true;
 bool isWatchDogCicle = false;
 uint8_t watchDogCounter = 0;
 bool isWatchDogEvent = false;
 uint8_t voltagePin = A2;
+byte check = 0;
 
 void setup()
 {
@@ -59,7 +59,7 @@ void setup()
 
 void activateSystemInterrupt()
 {
-	sy = true;
+	tiltSensorInterrupt = true;
 }
 
 void turnOn()
@@ -74,13 +74,12 @@ void turnOff()
 
 void loop()
 {
-
 	if (millis() < 60000)
 	{
-		smsPhone();
-		smsPower();
+		getSmsPhone();
+		getSmsPowerSafe();
 	}
-	if ((sy == true) && (millis() > 90000))
+	if ((tiltSensorInterrupt == true) && (millis() > 90000))
 	{
 		if (digitalRead(transistorPin) != HIGH)
 		{
@@ -88,7 +87,7 @@ void loop()
 			delay(20000);
 		}
 		timer = millis();
-		sy = false;
+		tiltSensorInterrupt = false;
 
 		delete(sendAtCommand(F("AT"), 100));
 
@@ -112,9 +111,7 @@ void loop()
 		if (isWatchDogEvent)
 		{
 			float measure = 0;
-
 			measure = (5.1 / 1024) * analogRead(voltagePin);
-			//mySerial.print("meausere = "); mySerial.println(measure);
 			if (measure < 3.25)
 			{
 				if (digitalRead(transistorPin) != HIGH)
@@ -138,7 +135,6 @@ void loop()
 
 				callPhoneNumber(phoneNumber);
 			
-
 				delay(15000);
 				turnOff();
 			}
@@ -153,9 +149,8 @@ void loop()
 		delay(100);
 	}
 }
-byte check = 0;
 
-String getSmsWithParameter(char tag)
+String exctractSmsTagged(char tag)
 {
 	SoftwareSerial mySerial(0, 3);
 	mySerial.begin(19200);
@@ -175,7 +170,7 @@ String getSmsWithParameter(char tag)
 	return "";
 }
 
-bool checkPhoneNumber(String phoneNumber)
+bool isValidPhoneNumber(String phoneNumber)
 {
 	if (phoneNumber.length() == 10)
 	{
@@ -191,9 +186,9 @@ bool checkPhoneNumber(String phoneNumber)
 	else { return false; }
 }
 
-void smsPower()
+void getSmsPowerSafe()
 {
-	String powerSafe = getSmsWithParameter('&');
+	String powerSafe = exctractSmsTagged('&');
 	if (powerSafe.length() > 0 && check == 0)
 	{
 		check = 1;
@@ -202,10 +197,10 @@ void smsPower()
 	}
 }
 
-void smsPhone()
+void getSmsPhone()
 {
-	String phoneNumber = getSmsWithParameter('#');
-	if (checkPhoneNumber(phoneNumber) && check == 0)
+	String phoneNumber = exctractSmsTagged('#');
+	if (isValidPhoneNumber(phoneNumber) && check == 0)
 	{
 		check = 1;
 		for (uint8_t i = 0; i < phoneNumber.length(); i++)
