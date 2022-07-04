@@ -192,8 +192,8 @@ void getSmsPowerSafe()
 	if (powerSafe.length() > 0 && check == 0)
 	{
 		check = 1;
-		delete(sendAtCommand("Y", 100));
-		isOnPowerSafe = true;
+		/*delete(sendAtCommand("Y", 100));*/
+		isOnPowerSafe = false;
 	}
 }
 
