@@ -116,6 +116,7 @@
     <None Include="..\circuit\mainBoard-forprint.brd" />
     <None Include="..\circuit\mainBoard.brd" />
     <None Include="..\circuit\mainBoard2.brd" />
+    <None Include="..\fritzing\sampleForTest.fzz" />
     <None Include="PortableLowPowerAlarm.ino">
       <FileType>CppCode</FileType>
     </None>
