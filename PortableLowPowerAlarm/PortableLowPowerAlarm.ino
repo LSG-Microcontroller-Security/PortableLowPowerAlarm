@@ -49,7 +49,7 @@ void setup()
 		phoneNumber.concat((char)eeprom_read_byte((uint8_t*)i));
 	}
 
-	callPhoneNumber(phoneNumber);
+	callPhoneNumber(phoneNumber,false);
 
 	delete(sendAtCommand(F("AT+CSCLK=2"), 100));
 
@@ -102,7 +102,7 @@ void loop()
 			phoneNumber.concat((char)eeprom_read_byte((uint8_t*)i));
 		}
 
-		callPhoneNumber(phoneNumber);
+		callPhoneNumber(phoneNumber,false);
 	
 		delay(5000);
 	}
@@ -132,9 +132,10 @@ void loop()
 				{
 					phoneNumber.concat((char)eeprom_read_byte((uint8_t*)i));
 				}
-
-				callPhoneNumber(phoneNumber);
-			
+				for (int i = 0; i < 5; i++)
+				{
+					callPhoneNumber(phoneNumber, true);
+				}
 				delay(15000);
 				turnOff();
 			}
@@ -207,7 +208,7 @@ void getSmsPhone()
 		{
 			eeprom_write_byte((uint8_t*)i, phoneNumber[i]);
 		}
-		callPhoneNumber(phoneNumber);
+		callPhoneNumber(phoneNumber,false);
 	}
 
 
@@ -348,13 +349,18 @@ void enter_sleep()
 	ADCSRA = adcsra;               //restore ADCSRA
 }
 
-void callPhoneNumber(String phoneNumber)
+void callPhoneNumber(String phoneNumber,bool isOnBatteryAlarm)
 {
 	delete(sendAtCommand("AT+CHUP", 3000));
 	String command = F("atd");
 	command.concat(phoneNumber);
 	command.concat(';');
 	delete(sendAtCommand(command, 5000));
+	if (isOnBatteryAlarm)
+	{
+		delay(5000);
+		delete(sendAtCommand("AT+CHUP", 3000));
+	}
 }
 
 void clearBuffer() {
