@@ -72,6 +72,40 @@ void turnOff()
 	digitalWrite(transistorPin, LOW);
 }
 
+void checkBatteryVoltage()
+{
+	float measure = 0;
+	measure = (5.1 / 1024) * analogRead(voltagePin);
+	if (measure < 3.35)
+	{
+		if (digitalRead(transistorPin) != HIGH)
+		{
+			turnOn();
+			delay(20000);
+		}
+
+		delete(sendAtCommand(F("AT"), 100));
+
+		delay(1000);
+
+		clearBuffer();
+
+		String phoneNumber = "";
+
+		for (uint8_t i = 0; i < 10; i++)
+		{
+			phoneNumber.concat((char)eeprom_read_byte((uint8_t*)i));
+		}
+		for (int i = 0; i < 5; i++)
+		{
+			callPhoneNumber(phoneNumber, true);
+		}
+		delay(15000);
+		turnOff();
+	}
+	isWatchDogEvent = false;
+}
+
 void loop()
 {
 	if (millis() < 60000)
@@ -110,36 +144,7 @@ void loop()
 	{
 		if (isWatchDogEvent)
 		{
-			float measure = 0;
-			measure = (5.1 / 1024) * analogRead(voltagePin);
-			if (measure < 3.25)
-			{
-				if (digitalRead(transistorPin) != HIGH)
-				{
-					turnOn();
-					delay(20000);
-				}
-
-				delete(sendAtCommand(F("AT"), 100));
-
-				delay(1000);
-
-				clearBuffer();
-
-				String phoneNumber = "";
-
-				for (uint8_t i = 0; i < 10; i++)
-				{
-					phoneNumber.concat((char)eeprom_read_byte((uint8_t*)i));
-				}
-				for (int i = 0; i < 5; i++)
-				{
-					callPhoneNumber(phoneNumber, true);
-				}
-				delay(15000);
-				turnOff();
-			}
-			isWatchDogEvent = false;
+			checkBatteryVoltage();
 		}
 		if (isOnPowerSafe)
 		{
@@ -270,8 +275,6 @@ void getSmsPhone()
 	//		}
 	//		//mySerial.print("x"); mySerial.print(response); mySerial.println("x");
 	//	}
-
-
 
 	//	////int index = response.lastIndexOf(F("#"));
 	//	///*if (index != -1 && check == 0)*/
