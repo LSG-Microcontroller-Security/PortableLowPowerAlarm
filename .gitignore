@@ -1,4 +1,4 @@
-﻿################################################################################
+################################################################################
 # This .gitignore file was automatically created by Microsoft(R) Visual Studio.
 ################################################################################
 
@@ -9,3 +9,5 @@
 /PortableLowPowerAlarm/PortableLowPowerAlarm.vcxproj.filters
 /Output-MicroBuild.txt
 /PortableLowPowerAlarm/Release
+PortableLowPowerAlarm/ARM/
+PortableLowPowerAlarm/x64/
