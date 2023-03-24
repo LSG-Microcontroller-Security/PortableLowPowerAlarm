@@ -1,6 +1,7 @@
 #include <SoftwareSerial.h>
 #include <avr/sleep.h>
 #include <avr/power.h>
+#include <avr/pgmspace.h>
 
 /// <summary>
 /// 8mhz speed clock is right
