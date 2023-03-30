@@ -34,7 +34,7 @@ void setup()
 
 	turnOn();
 
-	delay(20000);
+	//delay(20000);
 
 	PCMSK |= bit(PCINT2);  // want pin D3 / pin 2
 
@@ -48,7 +48,7 @@ void setup()
 
 	setSmsReceiver();
 
-	char phoneNumber[15]{};
+	char phoneNumber[11]{};
 
 	for (uint8_t i = 0; i < 10; i++)
 	{
@@ -72,63 +72,78 @@ void loop()
 	//	debugOnSerial(data);
 	//#endif 
 	// 
-//SMS Activity
-	if ((millis() - startTimer) < 60000)
+	//SMS Activity
+	if ((millis() - startTimer) < 30000)
 	{
-		getTaggedSmsFromResponse('#');
-		debugOnSerial("mess.");
+		startSMSActivity();
 	}
 	//Interrupt Activity
-	if ((tiltSensorInterrupt == true) && ((millis() - startTimer) > (90000)))
+	if ((tiltSensorInterrupt == true) && ((millis() - startTimer) > (45000)))
 	{
-
-#ifdef _DEBUG
-		debugOnSerial("intr");
-#endif
-
-		if (digitalRead(transistorPin) != HIGH)
-		{
-			turnOn();
-
-			delay(20000);
-		}
-		wDogTimer = millis();
-
-		tiltSensorInterrupt = false;
-
-		char phoneNumber[15]{};
-
-		for (uint8_t i = 0; i < 10; i++)
-		{
-			phoneNumber[i] = (char)eeprom_read_byte((uint8_t*)i);
-		}
-		strcat(phoneNumber, "\0");
-
-		callPhoneNumber(phoneNumber, false);
-
-		delay(5000);
+		tiltSensorActivity();
 	}
 	//WatchDog Sleep Activity
-	if ((millis() - wDogTimer) > 90000)
+	if ((millis() - wDogTimer) > 45000)
 	{
-		if (isWatchDogEvent)
-		{
+		watchDogAndSleepActivity();
+	}
+}
+
+void startSMSActivity()
+{
+	getTaggedSmsFromResponse('#');
+#ifdef _DEBUG
+	debugOnSerial("mess.");
+#endif
+}
+
+void tiltSensorActivity()
+{
+#ifdef _DEBUG
+	debugOnSerial("intr");
+#endif
+
+	if (digitalRead(transistorPin) != HIGH)
+	{
+		turnOn();
+
+		delay(20000);
+	}
+	
+	wDogTimer = millis();
+
+	tiltSensorInterrupt = false;
+
+	char phoneNumber[11]{};
+
+	for (uint8_t i = 0; i < 10; i++)
+	{
+		phoneNumber[i] = (char)eeprom_read_byte((uint8_t*)i);
+	}
+
+	strcat(phoneNumber, "\0");
+
+	callPhoneNumber(phoneNumber, false);
+
+	delay(5000);
+}
+
+void watchDogAndSleepActivity()
+{
+	if (isWatchDogEvent)
+	{
 
 #ifdef _DEBUG
-			debugOnSerial("wdgEv");
+		debugOnSerial("wdgEv");
 #endif
-			//checkBatteryVoltage();
+		//checkBatteryVoltage();
 
-		}
-
-		if (isOnPowerSafe)
-		{
-			turnOff();
-		}
-		isWatchDogEvent = false;
-		enter_sleep();
-		delay(100);
 	}
+	getTaggedSmsFromResponse('#');
+	if (isOnPowerSafe) { turnOff(); }else { turnOn(); }
+	isWatchDogEvent = false;
+	enter_sleep();
+	delay(100);
 }
 
 void setSmsReceiver()
@@ -244,11 +259,12 @@ bool exctractSmsTagged(char tag, char* sms)
 	}
 	delay(1000);
 
+
 	for (uint8_t index = 1; index < 6; index++)
 	{
 		char number[2] = { index + 48 ,'\0' };
 
-		char command[15] = "AT+CMGR=";
+		char command[10] = "AT+CMGR=";
 
 		strcat(command, number);
 
@@ -268,7 +284,7 @@ bool exctractSmsTagged(char tag, char* sms)
 				{
 					mySerial.readStringUntil(tag).toCharArray(sms, 20, 0);
 
-					char command[15] = "AT+CMGD=";
+					char command[10] = "AT+CMGD=";
 
 					strcat(command, number);
 
@@ -326,7 +342,7 @@ bool isSmsValidPhoneNumber(char* phoneNumber)
 
 bool isSmsOnPowerSafeOff(char* sms)
 {
-	if (strcmp(sms, "Y") == 0)
+	if (strcmp(sms, "y") == 0)
 	{
 		return  true;
 	}
@@ -335,7 +351,7 @@ bool isSmsOnPowerSafeOff(char* sms)
 
 void getTaggedSmsFromResponse(char tag)
 {
-	char sms[20] = "";
+	char sms[12] = "";
 	exctractSmsTagged(tag, sms);
 
 #ifdef _DEBUG
@@ -360,11 +376,13 @@ void getTaggedSmsFromResponse(char tag)
 		}
 		callPhoneNumber(sms, false);
 	}
+
 	if (isSmsOnPowerSafeOff(sms))
 	{
-		isOnPowerSafe = false;
+		isOnPowerSafe = !isOnPowerSafe;
 		//debugOnSerial("deactivate safeMode");
 	}
+
 
 	//String response = "";
 	//SoftwareSerial mySerial(0, 3);
@@ -536,7 +554,7 @@ void setup_watchdog(int ii) {
 
 ISR(WDT_vect) {
 
-	if (watchDogCounter == 35)
+	if (watchDogCounter == 4)
 	{
 		isWatchDogEvent = true;
 		watchDogCounter = 0;
