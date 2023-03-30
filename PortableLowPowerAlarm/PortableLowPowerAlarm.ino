@@ -7,7 +7,8 @@
 /// 8mhz speed clock is right
 /// </summary>
 
-unsigned long timer = 0;
+unsigned long wDogTimer = 0;
+unsigned long startTimer = 0;
 uint8_t interruptPin = 2;
 uint8_t transistorPin = 1;
 volatile bool tiltSensorInterrupt = false;
@@ -33,12 +34,14 @@ void setup()
 
 	turnOn();
 
-	//delay(20000);
+	delay(20000);
 
-	timer = millis();
 	PCMSK |= bit(PCINT2);  // want pin D3 / pin 2
+
 	GIFR |= bit(PCIF);    // clear any outstanding interrupts
+
 	GIMSK |= bit(PCIE);    // enable pin change interrupts
+
 	setup_watchdog(9); // approximately 4 seconds sleep
 
 	attachInterrupt(0, activateSystemInterrupt, FALLING);
@@ -55,25 +58,42 @@ void setup()
 
 	analogReference(DEFAULT);
 
-	//callPhoneNumber(phoneNumber, false);
+	callPhoneNumber(phoneNumber, false);
+
+	wDogTimer = millis();
+	startTimer = millis();
 }
 
 void loop()
 {
-	if (millis() < 30000)
+	//#ifdef _DEBUG
+	//	char data[4];
+	//	itoa(freeRam(), data, 10);
+	//	debugOnSerial(data);
+	//#endif 
+	// 
+//SMS Activity
+	if ((millis() - startTimer) < 60000)
 	{
 		getTaggedSmsFromResponse('#');
+		debugOnSerial("mess.");
 	}
-	
-	if ((tiltSensorInterrupt == true) && (millis() > (90000 / 3) ))
+	//Interrupt Activity
+	if ((tiltSensorInterrupt == true) && ((millis() - startTimer) > (90000)))
 	{
+
+#ifdef _DEBUG
 		debugOnSerial("intr");
+#endif
+
 		if (digitalRead(transistorPin) != HIGH)
 		{
 			turnOn();
+
 			delay(20000);
 		}
-		timer = millis();
+		wDogTimer = millis();
+
 		tiltSensorInterrupt = false;
 
 		char phoneNumber[15]{};
@@ -88,37 +108,28 @@ void loop()
 
 		delay(5000);
 	}
-	if (millis() - timer > (90000 / 3))
+	//WatchDog Sleep Activity
+	if ((millis() - wDogTimer) > 90000)
 	{
 		if (isWatchDogEvent)
 		{
+
+#ifdef _DEBUG
 			debugOnSerial("wdgEv");
+#endif
 			//checkBatteryVoltage();
-			isWatchDogEvent = false;
+
 		}
+
 		if (isOnPowerSafe)
 		{
 			turnOff();
 		}
+		isWatchDogEvent = false;
 		enter_sleep();
 		delay(100);
 	}
 }
-
-void debugOnSerial(char* stringa)
-{
-	//use on pin 4 (A2) be careful to remove analog function.
-	SoftwareSerial mySerial = SoftwareDynamicSerial(99, 4, 9600);
-	mySerial.print("..."); mySerial.println(stringa);
-}
-
-//void sendATCommand(SoftwareSerial& mySerial, const char command[], long unsigned command_delay)
-//{
-//	mySerial.println(F("AT"));
-//	delay(100);
-//	mySerial.println(command);
-//	delay(command_delay);
-//}
 
 void setSmsReceiver()
 {
@@ -158,6 +169,14 @@ void setSmsReceiver()
 	mySerial.println(F("AT+CNETLIGHT=0"));
 }
 
+void debugOnSerial(char* stringa)
+{
+	//return;
+	//use on pin 4 (A2) be careful to remove analog function.
+	SoftwareSerial mySerial = SoftwareDynamicSerial(99, 4, 9600);
+	mySerial.print("..."); mySerial.println(stringa);
+}
+
 void activateSystemInterrupt()
 {
 	tiltSensorInterrupt = true;
@@ -173,39 +192,45 @@ void turnOff()
 	digitalWrite(transistorPin, LOW);
 }
 
-//void checkBatteryVoltage()
-//{
-//	float measure = 0;
-//	measure = (5.1 / 1024) * analogRead(voltagePin);
-//	if (measure < 3.35)
-//	{
-//		if (digitalRead(transistorPin) != HIGH)
-//		{
-//			turnOn();
-//			delay(20000);
-//		}
-//
-//		//sendAtCommand(F("AT"), 100);
-//
-//		//delay(1000);
-//
-//		//clearBuffer();
-//
-//		globalString = "";
-//
-//		for (uint8_t i = 0; i < 10; i++)
-//		{
-//			globalString.concat((char)eeprom_read_byte((uint8_t*)i));
-//		}
-//		for (int i = 0; i < 5; i++)
-//		{
-//			callPhoneNumber(globalString, true);
-//		}
-//		delay(15000);
-//		turnOff();
-//	}
-//	isWatchDogEvent = false;
-//}
+void checkBatteryVoltage()
+{
+	float measure = 0;
+
+	for (int i = 0; i < 50; i++)
+	{
+		measure = measure + ((5.10f / 1024.00f) * analogRead(voltagePin));
+	}
+
+	measure = measure / 50;
+
+	if (measure < 3.35f)
+	{
+		if (digitalRead(transistorPin) != HIGH)
+		{
+			turnOn();
+			delay(20000);
+		}
+
+		char phoneNumber[15]{};
+
+		for (uint8_t i = 0; i < 10; i++)
+		{
+			phoneNumber[i] = (char)eeprom_read_byte((uint8_t*)i);
+		}
+
+		strcat(phoneNumber, "\0");
+
+		for (int i = 0; i < 5; i++)
+		{
+			callPhoneNumber(phoneNumber, true);
+		}
+
+		delay(15000);
+
+		turnOff();
+	}
+	isWatchDogEvent = false;
+}
 
 bool exctractSmsTagged(char tag, char* sms)
 {
@@ -219,7 +244,7 @@ bool exctractSmsTagged(char tag, char* sms)
 	}
 	delay(1000);
 
-	for (uint8_t index = 1; index < 3; index++)
+	for (uint8_t index = 1; index < 6; index++)
 	{
 		char number[2] = { index + 48 ,'\0' };
 
@@ -301,7 +326,7 @@ bool isSmsValidPhoneNumber(char* phoneNumber)
 
 bool isSmsOnPowerSafeOff(char* sms)
 {
-	if (strcmp(sms, "Ps") == 0)
+	if (strcmp(sms, "Y") == 0)
 	{
 		return  true;
 	}
@@ -312,7 +337,11 @@ void getTaggedSmsFromResponse(char tag)
 {
 	char sms[20] = "";
 	exctractSmsTagged(tag, sms);
-	//debugOnSerial(sms);
+
+#ifdef _DEBUG
+	debugOnSerial(sms);
+#endif
+
 	if (isSmsValidPhoneNumber(sms))
 	{
 		char charToWrite = ' ';
@@ -476,7 +505,7 @@ void callPhoneNumber(char* phoneNumber, bool isOnBatteryAlarm)
 	mySerial.println("AT");
 	delay(100);
 	mySerial.println(command);
-	delay(5000);
+	delay(7000);
 	if (isOnBatteryAlarm)
 	{
 		delay(5000);
