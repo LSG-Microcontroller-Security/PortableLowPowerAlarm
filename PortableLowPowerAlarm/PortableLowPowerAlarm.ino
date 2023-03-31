@@ -17,7 +17,6 @@ bool isWatchDogCicle = false;
 uint8_t watchDogCounter = 0;
 bool isWatchDogEvent = false;
 uint8_t voltagePin = A2;
-//byte check = 0;
 
 SoftwareSerial SoftwareDynamicSerial(uint8_t rx, uint8_t tx, long speed, bool inverse_logic = false)
 {
@@ -48,19 +47,12 @@ void setup()
 
 	setSmsReceiver();
 
-	char phoneNumber[11]{};
-
-	for (uint8_t i = 0; i < 10; i++)
-	{
-		phoneNumber[i] = (char)eeprom_read_byte((uint8_t*)i);
-	}
-	strcat(phoneNumber, "\0");
-
 	analogReference(DEFAULT);
 
-	callPhoneNumber(phoneNumber, false);
+	callPhoneNumber();
 
 	wDogTimer = millis();
+
 	startTimer = millis();
 }
 
@@ -71,7 +63,7 @@ void loop()
 	//	itoa(freeRam(), data, 10);
 	//	debugOnSerial(data);
 	//#endif 
-	// 
+
 	//SMS Activity
 	if ((millis() - startTimer) < 30000)
 	{
@@ -114,16 +106,7 @@ void tiltSensorActivity()
 
 	tiltSensorInterrupt = false;
 
-	char phoneNumber[11]{};
-
-	for (uint8_t i = 0; i < 10; i++)
-	{
-		phoneNumber[i] = (char)eeprom_read_byte((uint8_t*)i);
-	}
-
-	strcat(phoneNumber, "\0");
-
-	callPhoneNumber(phoneNumber, false);
+	callPhoneNumber();
 
 	delay(5000);
 }
@@ -137,9 +120,12 @@ void watchDogAndSleepActivity()
 		debugOnSerial("wdgEv");
 #endif
 		//checkBatteryVoltage();
-
 	}
 	getTaggedSmsFromResponse('#');
+	if ((tiltSensorInterrupt == true))
+	{
+		tiltSensorActivity();
+	}
 	if (isOnPowerSafe) { turnOff(); }else { turnOn(); }
 	isWatchDogEvent = false;
 	enter_sleep();
@@ -226,18 +212,9 @@ void checkBatteryVoltage()
 			delay(20000);
 		}
 
-		char phoneNumber[15]{};
-
-		for (uint8_t i = 0; i < 10; i++)
-		{
-			phoneNumber[i] = (char)eeprom_read_byte((uint8_t*)i);
-		}
-
-		strcat(phoneNumber, "\0");
-
 		for (int i = 0; i < 5; i++)
 		{
-			callPhoneNumber(phoneNumber, true);
+			callPhoneNumber();
 		}
 
 		delay(15000);
@@ -374,13 +351,16 @@ void getTaggedSmsFromResponse(char tag)
 				cicle++;
 			}
 		}
-		callPhoneNumber(sms, false);
+		callPhoneNumber(sms);
 	}
 
 	if (isSmsOnPowerSafeOff(sms))
 	{
 		isOnPowerSafe = !isOnPowerSafe;
-		//debugOnSerial("deactivate safeMode");
+		if (isOnPowerSafe) callPhoneNumber();
+#ifdef _DEBUG
+		debugOnSerial("deactivate safeMode");
+#endif
 	}
 
 
@@ -509,10 +489,24 @@ void enter_sleep()
 	ADCSRA = adcsra;               //restore ADCSRA
 }
 
-void callPhoneNumber(char* phoneNumber, bool isOnBatteryAlarm)
+void callPhoneNumber()
 {
-	char command[30]{};
+	char phoneNumber[11]{};
+
+	for (uint8_t i = 0; i < 10; i++)
+	{
+		phoneNumber[i] = (char)eeprom_read_byte((uint8_t*)i);
+	}
+
+	strcat(phoneNumber, "\0");
+
+	callPhoneNumber(phoneNumber);\
+}
+
+void callPhoneNumber(char* phoneNumber)
+{
 	SoftwareSerial mySerial = SoftwareDynamicSerial(0, 3, 19200);
+	char command[30]{};
 	mySerial.println("AT");
 	delay(100);
 	//globalString = F("atd");
@@ -524,14 +518,7 @@ void callPhoneNumber(char* phoneNumber, bool isOnBatteryAlarm)
 	delay(100);
 	mySerial.println(command);
 	delay(7000);
-	if (isOnBatteryAlarm)
-	{
-		delay(5000);
-		mySerial.println("AT");
-		delay(100);
-		mySerial.println(F("AT+CHUP"));
-		delay(3000);
-	}
+
 }
 
 void setup_watchdog(int ii) {
@@ -553,7 +540,6 @@ void setup_watchdog(int ii) {
 }
 
 ISR(WDT_vect) {
-
 	if (watchDogCounter == 4)
 	{
 		isWatchDogEvent = true;
