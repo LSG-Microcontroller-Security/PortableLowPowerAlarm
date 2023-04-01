@@ -11,7 +11,7 @@ unsigned long wDogTimer = 0;
 unsigned long startTimer = 0;
 uint8_t interruptPin = 2;
 uint8_t transistorPin = 1;
-volatile bool tiltSensorInterrupt = false;
+volatile bool isOnTiltSensorInterrupt = false;
 bool isOnPowerSafe = true;
 bool isWatchDogCicle = false;
 uint8_t watchDogCounter = 0;
@@ -41,7 +41,7 @@ void setup()
 
 	GIMSK |= bit(PCIE);    // enable pin change interrupts
 
-	setup_watchdog(9); // approximately 4 seconds sleep
+	//setup_watchdog(9); // approximately 4 seconds sleep
 
 	attachInterrupt(0, activateSystemInterrupt, FALLING);
 
@@ -51,7 +51,7 @@ void setup()
 
 	callPhoneNumber();
 
-	wDogTimer = millis();
+	//wDogTimer = millis();
 
 	startTimer = millis();
 }
@@ -69,16 +69,26 @@ void loop()
 	{
 		startSMSActivity();
 	}
+	else if(isOnPowerSafe && !isOnTiltSensorInterrupt) { 
+			turnOff(); 
+			enter_sleep(); 
+	}
+	else if (!isOnTiltSensorInterrupt) {
+		enter_sleep();
+	}
+
 	//Interrupt Activity
-	if ((tiltSensorInterrupt == true) && ((millis() - startTimer) > (45000)))
+	if ((isOnTiltSensorInterrupt) && ((millis() - startTimer) > (45000)))
 	{
 		tiltSensorActivity();
 	}
+
+
 	//WatchDog Sleep Activity
-	if ((millis() - wDogTimer) > 45000)
-	{
-		watchDogAndSleepActivity();
-	}
+	//if ((millis() - wDogTimer) > 180000)
+	//{
+	//	watchDogAndSleepActivity();
+	//}
 }
 
 void startSMSActivity()
@@ -102,35 +112,34 @@ void tiltSensorActivity()
 		delay(20000);
 	}
 	
-	wDogTimer = millis();
+	/*wDogTimer = millis();*/
 
-	tiltSensorInterrupt = false;
+	isOnTiltSensorInterrupt = false;
 
 	callPhoneNumber();
 
 	delay(5000);
 }
 
-void watchDogAndSleepActivity()
-{
-	if (isWatchDogEvent)
-	{
-
-#ifdef _DEBUG
-		debugOnSerial("wdgEv");
-#endif
-		//checkBatteryVoltage();
-	}
-	getTaggedSmsFromResponse('#');
-	if ((tiltSensorInterrupt == true))
-	{
-		tiltSensorActivity();
-	}
-	if (isOnPowerSafe) { turnOff(); }else { turnOn(); }
-	isWatchDogEvent = false;
-	enter_sleep();
-	delay(100);
-}
+//void watchDogAndSleepActivity()
+//{
+//	if (isWatchDogEvent)
+//	{
+//#ifdef _DEBUG
+//		debugOnSerial("wdgEv");
+//#endif
+//		checkBatteryVoltage();
+//	}
+//	//getTaggedSmsFromResponse('#');
+//	//if ((tiltSensorInterrupt == true))
+//	//{
+//	//	tiltSensorActivity();
+//	//}
+//	//if (isOnPowerSafe) { turnOff(); }else { turnOn(); }
+//	isWatchDogEvent = false;
+//	enter_sleep();
+//	delay(100);
+//}
 
 void setSmsReceiver()
 {
@@ -180,7 +189,7 @@ void debugOnSerial(char* stringa)
 
 void activateSystemInterrupt()
 {
-	tiltSensorInterrupt = true;
+	isOnTiltSensorInterrupt = true;
 }
 
 void turnOn()
@@ -356,8 +365,8 @@ void getTaggedSmsFromResponse(char tag)
 
 	if (isSmsOnPowerSafeOff(sms))
 	{
-		isOnPowerSafe = !isOnPowerSafe;
-		if (isOnPowerSafe) callPhoneNumber();
+		isOnPowerSafe = false;
+		callPhoneNumber();
 #ifdef _DEBUG
 		debugOnSerial("deactivate safeMode");
 #endif
@@ -521,34 +530,34 @@ void callPhoneNumber(char* phoneNumber)
 
 }
 
-void setup_watchdog(int ii) {
+//void setup_watchdog(int ii) {
+//
+//	byte bb;
+//	int ww;
+//	if (ii > 9) ii = 9;
+//	bb = ii & 7;
+//	if (ii > 7) bb |= (1 << 5);
+//	bb |= (1 << WDCE);
+//	ww = bb;
+//
+//	MCUSR &= ~(1 << WDRF);
+//	// start timed sequence
+//	WDTCR |= (1 << WDCE) | (1 << WDE);
+//	// set new watchdog timeout value
+//	WDTCR = bb;
+//	WDTCR |= _BV(WDIE);
+//}
 
-	byte bb;
-	int ww;
-	if (ii > 9) ii = 9;
-	bb = ii & 7;
-	if (ii > 7) bb |= (1 << 5);
-	bb |= (1 << WDCE);
-	ww = bb;
-
-	MCUSR &= ~(1 << WDRF);
-	// start timed sequence
-	WDTCR |= (1 << WDCE) | (1 << WDE);
-	// set new watchdog timeout value
-	WDTCR = bb;
-	WDTCR |= _BV(WDIE);
-}
-
-ISR(WDT_vect) {
-	if (watchDogCounter == 4)
-	{
-		isWatchDogEvent = true;
-		watchDogCounter = 0;
-	}
-	else {
-		watchDogCounter++;
-	}
-}
+//ISR(WDT_vect) {
+//	if (watchDogCounter == 35)
+//	{
+//		isWatchDogEvent = true;
+//		watchDogCounter = 0;
+//	}
+//	else {
+//		watchDogCounter++;
+//	}
+//}
 
 int freeRam() {
 	extern int __heap_start, * __brkval;
