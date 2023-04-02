@@ -5,6 +5,43 @@ VisualStudioVersion = 16.0.29806.167
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PortableLowPowerAlarm", "PortableLowPowerAlarm\PortableLowPowerAlarm.vcxproj", "{C5F80730-F44F-4478-BDAE-6634EFC2CA88}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "portableLowPower_new", "portableLowPower_new\portableLowPower_new.vcxproj", "{6E6B2E05-96A6-4599-86C5-6380EFF4A60D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "libraries", "libraries", "{03F88273-542C-477C-BD6E-C9703A8DDC49}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ActivityFramework", "ActivityFramework", "{0925AD69-2087-49CE-A956-B49D0F6FF17B}"
+	ProjectSection(SolutionItems) = preProject
+		..\libraries\ActivityFramework\AnalogPort.cpp = ..\libraries\ActivityFramework\AnalogPort.cpp
+		..\libraries\ActivityFramework\AnalogPort.h = ..\libraries\ActivityFramework\AnalogPort.h
+		..\libraries\ActivityFramework\AnalogPortSensor.cpp = ..\libraries\ActivityFramework\AnalogPortSensor.cpp
+		..\libraries\ActivityFramework\AnalogPortSensor.h = ..\libraries\ActivityFramework\AnalogPortSensor.h
+		..\libraries\ActivityFramework\AvrMicroRepository.cpp = ..\libraries\ActivityFramework\AvrMicroRepository.cpp
+		..\libraries\ActivityFramework\AvrMicroRepository.h = ..\libraries\ActivityFramework\AvrMicroRepository.h
+		..\libraries\ActivityFramework\commonsLayer.cpp = ..\libraries\ActivityFramework\commonsLayer.cpp
+		..\libraries\ActivityFramework\commonsLayer.h = ..\libraries\ActivityFramework\commonsLayer.h
+		..\libraries\ActivityFramework\DeviceActivity.cpp = ..\libraries\ActivityFramework\DeviceActivity.cpp
+		..\libraries\ActivityFramework\DeviceActivity.h = ..\libraries\ActivityFramework\DeviceActivity.h
+		..\libraries\ActivityFramework\DigitalPort.cpp = ..\libraries\ActivityFramework\DigitalPort.cpp
+		..\libraries\ActivityFramework\DigitalPort.h = ..\libraries\ActivityFramework\DigitalPort.h
+		..\libraries\ActivityFramework\DigitalPortSensor.cpp = ..\libraries\ActivityFramework\DigitalPortSensor.cpp
+		..\libraries\ActivityFramework\DigitalPortSensor.h = ..\libraries\ActivityFramework\DigitalPortSensor.h
+		..\libraries\ActivityFramework\InterfaceSerialRepository.h = ..\libraries\ActivityFramework\InterfaceSerialRepository.h
+		..\libraries\ActivityFramework\SIM_AT_COMMADS.h = ..\libraries\ActivityFramework\SIM_AT_COMMADS.h
+		..\libraries\ActivityFramework\SIM_RESPONSE_DATA.h = ..\libraries\ActivityFramework\SIM_RESPONSE_DATA.h
+		..\libraries\ActivityFramework\SimModuleActivity.cpp = ..\libraries\ActivityFramework\SimModuleActivity.cpp
+		..\libraries\ActivityFramework\SimModuleActivity.h = ..\libraries\ActivityFramework\SimModuleActivity.h
+		..\libraries\ActivityFramework\SimModuleDevice.cpp = ..\libraries\ActivityFramework\SimModuleDevice.cpp
+		..\libraries\ActivityFramework\SimModuleDevice.h = ..\libraries\ActivityFramework\SimModuleDevice.h
+		..\libraries\ActivityFramework\SimProgMemRepository.cpp = ..\libraries\ActivityFramework\SimProgMemRepository.cpp
+		..\libraries\ActivityFramework\SimProgMemRepository.h = ..\libraries\ActivityFramework\SimProgMemRepository.h
+		..\libraries\ActivityFramework\SmokeActivity.cpp = ..\libraries\ActivityFramework\SmokeActivity.cpp
+		..\libraries\ActivityFramework\SmokeActivity.h = ..\libraries\ActivityFramework\SmokeActivity.h
+		..\libraries\ActivityFramework\SoftwareSerialRepository.cpp = ..\libraries\ActivityFramework\SoftwareSerialRepository.cpp
+		..\libraries\ActivityFramework\SoftwareSerialRepository.h = ..\libraries\ActivityFramework\SoftwareSerialRepository.h
+		..\libraries\ActivityFramework\VoltageActivity.cpp = ..\libraries\ActivityFramework\VoltageActivity.cpp
+		..\libraries\ActivityFramework\VoltageActivity.h = ..\libraries\ActivityFramework\VoltageActivity.h
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -15,9 +52,16 @@ Global
 		{C5F80730-F44F-4478-BDAE-6634EFC2CA88}.Debug|x86.Build.0 = Debug|Win32
 		{C5F80730-F44F-4478-BDAE-6634EFC2CA88}.Release|x86.ActiveCfg = Release|Win32
 		{C5F80730-F44F-4478-BDAE-6634EFC2CA88}.Release|x86.Build.0 = Release|Win32
+		{6E6B2E05-96A6-4599-86C5-6380EFF4A60D}.Debug|x86.ActiveCfg = Debug|Win32
+		{6E6B2E05-96A6-4599-86C5-6380EFF4A60D}.Debug|x86.Build.0 = Debug|Win32
+		{6E6B2E05-96A6-4599-86C5-6380EFF4A60D}.Release|x86.ActiveCfg = Release|Win32
+		{6E6B2E05-96A6-4599-86C5-6380EFF4A60D}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{0925AD69-2087-49CE-A956-B49D0F6FF17B} = {03F88273-542C-477C-BD6E-C9703A8DDC49}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {FEE39E50-920C-4713-ABAA-FED2DDC70EBA}
