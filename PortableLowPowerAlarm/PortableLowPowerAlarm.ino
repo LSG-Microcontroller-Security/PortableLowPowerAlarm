@@ -7,15 +7,16 @@
 /// 8mhz speed clock is right
 /// </summary>
 
-unsigned long wDogTimer = 0;
+//unsigned long wDogTimer = 0;
 unsigned long startTimer = 0;
+unsigned long turnOffTimer = 0;
 uint8_t interruptPin = 2;
 uint8_t transistorPin = 1;
 volatile bool isOnTiltSensorInterrupt = false;
 bool isOnPowerSafe = true;
-bool isWatchDogCicle = false;
-uint8_t watchDogCounter = 0;
-bool isWatchDogEvent = false;
+//bool isWatchDogCicle = false;
+//uint8_t watchDogCounter = 0;
+//bool isWatchDogEvent = false;
 uint8_t voltagePin = A2;
 
 SoftwareSerial SoftwareDynamicSerial(uint8_t rx, uint8_t tx, long speed, bool inverse_logic = false)
@@ -33,7 +34,7 @@ void setup()
 
 	turnOn();
 
-	//delay(20000);
+	delay(20000);
 
 	PCMSK |= bit(PCINT2);  // want pin D3 / pin 2
 
@@ -47,13 +48,15 @@ void setup()
 
 	setSmsReceiver();
 
-	analogReference(DEFAULT);
+	//analogReference(DEFAULT);
 
 	callPhoneNumber();
 
 	//wDogTimer = millis();
 
 	startTimer = millis();
+
+	turnOffTimer = millis();
 }
 
 void loop()
@@ -64,23 +67,21 @@ void loop()
 	//	debugOnSerial(data);
 	//#endif 
 
-	//SMS Activity
-	if ((millis() - startTimer) < 30000)
+	//SMS Activity for only one time
+	if ((millis() - startTimer) <  120000)
 	{
 		startSMSActivity();
 	}
-	else if(isOnPowerSafe && !isOnTiltSensorInterrupt) { 
-			turnOff(); 
-			enter_sleep(); 
-	}
-	else if (!isOnTiltSensorInterrupt) {
-		enter_sleep();
-	}
-
-	//Interrupt Activity
-	if ((isOnTiltSensorInterrupt) && ((millis() - startTimer) > (45000)))
-	{
-		tiltSensorActivity();
+	
+	if((millis() - turnOffTimer) > 120000) {
+		if (!isOnTiltSensorInterrupt){
+			if (isOnPowerSafe) turnOff();
+			enter_sleep();
+		}
+		else
+		{
+			tiltSensorInterruptActivity();
+		}
 	}
 
 
@@ -99,7 +100,7 @@ void startSMSActivity()
 #endif
 }
 
-void tiltSensorActivity()
+void tiltSensorInterruptActivity()
 {
 #ifdef _DEBUG
 	debugOnSerial("intr");
@@ -119,6 +120,8 @@ void tiltSensorActivity()
 	callPhoneNumber();
 
 	delay(5000);
+
+	turnOffTimer = millis();
 }
 
 //void watchDogAndSleepActivity()
@@ -202,36 +205,36 @@ void turnOff()
 	digitalWrite(transistorPin, LOW);
 }
 
-void checkBatteryVoltage()
-{
-	float measure = 0;
-
-	for (int i = 0; i < 50; i++)
-	{
-		measure = measure + ((5.10f / 1024.00f) * analogRead(voltagePin));
-	}
-
-	measure = measure / 50;
-
-	if (measure < 3.35f)
-	{
-		if (digitalRead(transistorPin) != HIGH)
-		{
-			turnOn();
-			delay(20000);
-		}
-
-		for (int i = 0; i < 5; i++)
-		{
-			callPhoneNumber();
-		}
-
-		delay(15000);
-
-		turnOff();
-	}
-	isWatchDogEvent = false;
-}
+//void checkBatteryVoltage()
+//{
+//	float measure = 0;
+//
+//	for (int i = 0; i < 50; i++)
+//	{
+//		measure = measure + ((5.10f / 1024.00f) * analogRead(voltagePin));
+//	}
+//
+//	measure = measure / 50;
+//
+//	if (measure < 3.35f)
+//	{
+//		if (digitalRead(transistorPin) != HIGH)
+//		{
+//			turnOn();
+//			delay(20000);
+//		}
+//
+//		for (int i = 0; i < 5; i++)
+//		{
+//			callPhoneNumber();
+//		}
+//
+//		delay(15000);
+//
+//		turnOff();
+//	}
+//	isWatchDogEvent = false;
+//}
 
 bool exctractSmsTagged(char tag, char* sms)
 {
@@ -286,15 +289,15 @@ bool exctractSmsTagged(char tag, char* sms)
 	return returnValue;
 }
 
-void clearAllSms()
-{
-	SoftwareSerial mySerial(0, 3);
-	mySerial.begin(19200);
-	delay(3000);
-	mySerial.println(F("AT"));
-	delay(100);
-	mySerial.println(F("AT+CMGD=1,4"));
-}
+//void clearAllSms()
+//{
+//	SoftwareSerial mySerial(0, 3);
+//	mySerial.begin(19200);
+//	delay(3000);
+//	mySerial.println(F("AT"));
+//	delay(100);
+//	mySerial.println(F("AT+CMGD=1,4"));
+//}
 
 bool isSmsValidPhoneNumber(char* phoneNumber)
 {
@@ -559,19 +562,19 @@ void callPhoneNumber(char* phoneNumber)
 //	}
 //}
 
-int freeRam() {
-	extern int __heap_start, * __brkval;
-	int v;
-	return (int)&v - (__brkval == 0 ? (int)&__heap_start : (int)__brkval);
-}
+//int freeRam() {
+//	extern int __heap_start, * __brkval;
+//	int v;
+//	return (int)&v - (__brkval == 0 ? (int)&__heap_start : (int)__brkval);
+//}
 
-void blinkLedDebug(int time)
-{
-	digitalWrite(1, HIGH);
-	delay(time);
-	digitalWrite(1, LOW);
-	delay(time);
-}
+//void blinkLedDebug(int time)
+//{
+//	digitalWrite(1, HIGH);
+//	delay(time);
+//	digitalWrite(1, LOW);
+//	delay(time);
+//}
 
 
 
