@@ -80,7 +80,7 @@ void loop()
 		}
 	}
 
-	if (isOnTiltSensorInterrupt)
+	if (isOnTiltSensorInterrupt && ((millis() - startTimer) > 120000))
 	{
 		tiltSensorInterruptActivity();
 	}
