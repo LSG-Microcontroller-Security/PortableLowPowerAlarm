@@ -78,10 +78,11 @@ void loop()
 			if (isOnPowerSafe) turnOff();
 			enter_sleep();
 		}
-		else
-		{
-			tiltSensorInterruptActivity();
-		}
+	}
+
+	if (isOnTiltSensorInterrupt)
+	{
+		tiltSensorInterruptActivity();
 	}
 
 
