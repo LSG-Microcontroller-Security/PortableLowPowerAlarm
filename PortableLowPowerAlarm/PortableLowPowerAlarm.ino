@@ -17,7 +17,11 @@ bool isOnPowerSafe = false;
 bool isWatchDogCicle = false;
 uint8_t watchDogCounter = 0;
 bool isWatchDogEvent = false;
-uint8_t voltagePin = A2;
+//uint8_t voltagePin = A2;
+bool isCallDisabled = false;
+
+#define ATD "atd"
+
 
 SoftwareSerial SoftwareDynamicSerial(uint8_t rx, uint8_t tx, long speed, bool inverse_logic = false)
 {
@@ -29,7 +33,7 @@ SoftwareSerial SoftwareDynamicSerial(uint8_t rx, uint8_t tx, long speed, bool in
 void setup()
 {
 	pinMode(transistorPin, OUTPUT);
-
+	
 	pinMode(interruptPin, INPUT_PULLUP);
 
 	turnOn();
@@ -99,6 +103,7 @@ void loop() {
 	if (isOnTiltSensorInterrupt && ((millis() - startTimer) > 120000)) {
 		tiltSensorInterruptActivity();
 		turnOffTimer = millis();
+		//setup_watchdog(9);
 	}
 
 	//WatchDog Sleep Activity
@@ -110,13 +115,7 @@ void loop() {
 }
 
 void startSMSActivity() {
-	//if (digitalRead(transistorPin) != HIGH) {
-	//	turnOn();
-	//}
 	getTaggedSmsFromResponse('#');
-#ifdef _DEBUG
-	debugOnSerial("mess.");
-#endif
 }
 
 void tiltSensorInterruptActivity()
@@ -138,12 +137,6 @@ void tiltSensorInterruptActivity()
 	delay(5000);
 
 	
-}
-
-void watchDogActivity()
-{
-
-
 }
 
 //void watchDogAndSleepActivity()
@@ -193,11 +186,11 @@ void setSmsReceiver()
 
 	delay(1000);
 
-	//mySerial.println(F("AT"));
-	//delay(100);
-	//mySerial.println(F("AT+CNETLIGHT=0"));
+	mySerial.println(F("AT"));
+	delay(100);
+	mySerial.println(F("AT+CNETLIGHT=0"));
 
-	//delay(1000);
+	delay(1000);
 
 	mySerial.println(F("AT"));
 	delay(100);
@@ -324,35 +317,35 @@ bool exctractSmsTagged(char tag, char* sms)
 //	mySerial.println(F("AT+CMGD=1,4"));
 //}
 
-bool isSmsValidPhoneNumber(char* phoneNumber)
-{
-	char phone_c = ' ';
-	uint8_t cicle = 0;
-	while (phone_c != '\0')
-	{
-		phone_c = phoneNumber[cicle];
-
-		if (phone_c >= 48 && phone_c <= 57)
-		{
-			return true;
-		}
-		cicle++;
-	}
-	return false;
-
-	//if (phoneNumber.length() == 10)
-	//{
-	//	for (uint8_t i = 0; i < phoneNumber.length(); i++)
-	//	{
-	//		if (phoneNumber[i] < 48 && phoneNumber[i] > 57)
-	//		{
-	//			return false;
-	//		}
-	//	}
-	//	return true;
-	//}
-	//else { return false; }
-}
+//bool isSmsValidPhoneNumber(char* phoneNumber)
+//{
+//	char phone_c = ' ';
+//	uint8_t cicle = 0;
+//	while (phone_c != '\0')
+//	{
+//		phone_c = phoneNumber[cicle];
+//
+//		if (phone_c >= 48 && phone_c <= 57)
+//		{
+//			return true;
+//		}
+//		cicle++;
+//	}
+//	return false;
+//
+//	//if (phoneNumber.length() == 10)
+//	//{
+//	//	for (uint8_t i = 0; i < phoneNumber.length(); i++)
+//	//	{
+//	//		if (phoneNumber[i] < 48 && phoneNumber[i] > 57)
+//	//		{
+//	//			return false;
+//	//		}
+//	//	}
+//	//	return true;
+//	//}
+//	//else { return false; }
+//}
 
 //bool isSmsOnPowerSafeOff(char* sms)
 //{
@@ -391,7 +384,12 @@ void getTaggedSmsFromResponse(char tag) {
 	debugOnSerial(sms);
 #endif
 
-	if (isSmsValidPhoneNumber(sms))
+	char phone_c = ' ';
+
+	phone_c = sms[0];
+
+	//check if sms is a configuration phone number
+	if (phone_c >= 48 && phone_c <= 57)
 	{
 		char charToWrite = ' ';
 		uint8_t cicle = 0;
@@ -419,7 +417,21 @@ void getTaggedSmsFromResponse(char tag) {
 	//#endif
 	//	}
 
+	if (isSmsCodeFind(sms, "x")) {
+		isCallDisabled = true;
+	}
+
+	if (isSmsCodeFind(sms, "y")) {
+
+		isCallDisabled = false;
+
+		callPhoneNumber();
+
+		delay(5000);
+	}
+
 	if (isSmsCodeFind(sms,"s")){
+
 		isOnPowerSafe = true;
 
 		callPhoneNumber();
@@ -558,6 +570,8 @@ void enter_sleep()
 
 void callPhoneNumber()
 {
+	if (isCallDisabled) return;
+
 	char phoneNumber[11]{};
 
 	for (uint8_t i = 0; i < 10; i++)
@@ -577,7 +591,7 @@ void callPhoneNumber(char* phoneNumber)
 	//mySerial.println("AT");
 	//delay(100);
 	//globalString = F("atd");
-	strcat(command, "atd");
+	strcat(command, ATD);
 	strcat(command, phoneNumber);
 	strcat(command, ";");
 	strcat(command, "\0");
