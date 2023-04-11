@@ -2,12 +2,12 @@
 #include <avr/sleep.h>
 #include <avr/power.h>
 #include <avr/pgmspace.h>
+#include <avr/wdt.h>
 
 /// <summary>
 /// 8mhz speed clock is right
 /// </summary>
 
-//unsigned long wDogTimer = 0;
 unsigned long startTimer = 0;
 unsigned long turnOffTimer = 0;
 uint8_t interruptPin = 2;
@@ -40,21 +40,27 @@ void setup()
 
 	GIMSK |= bit(PCIE);    // enable pin change interrupts
 
-	setup_watchdog(9); // approximately 4 seconds sleep
-
-	attachInterrupt(0, activateSystemInterrupt, FALLING);
-
 	setSmsReceiver();
 
 	//analogReference(DEFAULT);
 
 	callPhoneNumber();
 
-	//wDogTimer = millis();
-
 	startTimer = millis();
 
 	turnOffTimer = millis();
+
+	//wdt_disable();
+
+	//setup_watchdog(9); // approximately 4 seconds sleep
+
+	attachInterrupt(0, activateSystemInterrupt, FALLING);
+
+	setup_watchdog(9);
+
+	delay(1000);
+
+	//detachInterrupt(0);
 }
 
 void loop() {
@@ -63,6 +69,17 @@ void loop() {
 	//	itoa(freeRam(), data, 10);
 	//	debugOnSerial(data);
 	//#endif 
+	//if ((millis() - startTimer) < 30000) {
+	//	setup_watchdog(9);
+	//}
+	//	if (isWatchDogEvent)
+//	{
+//#ifdef _DEBUG
+//		blinkLedDebug(1000);
+//		isWatchDogEvent = false;
+//#endif
+//	}
+//	return;
 
 	//SMS Activity for only one time
 	if ((millis() - startTimer) < 120000) {
@@ -71,19 +88,24 @@ void loop() {
 
 	if ((millis() - turnOffTimer) > 120000) {
 		if (!isOnTiltSensorInterrupt) {
-			if (isOnPowerSafe) turnOff();
-			enter_sleep();
+			if (isOnPowerSafe) {
+				turnOff();
+				wdt_disable();
+				enter_sleep();
+			}
 		}
 	}
 
 	if (isOnTiltSensorInterrupt && ((millis() - startTimer) > 120000)) {
 		tiltSensorInterruptActivity();
+		turnOffTimer = millis();
 	}
 
 	//WatchDog Sleep Activity
 	if (isWatchDogEvent && !isOnPowerSafe && ((millis() - startTimer) > 120000)) {
 		//turnOffTimer = millis();
-		watchDogActivity();
+		startSMSActivity();
+		isWatchDogEvent = false;
 	}
 }
 
@@ -103,7 +125,7 @@ void tiltSensorInterruptActivity()
 	debugOnSerial("intr");
 #endif
 
-	if (digitalRead(transistorPin) != HIGH){
+	if (digitalRead(transistorPin) != HIGH) {
 		turnOn();
 	}
 
@@ -115,15 +137,13 @@ void tiltSensorInterruptActivity()
 
 	delay(5000);
 
-	turnOffTimer = millis();
+	
 }
 
 void watchDogActivity()
 {
-	
-	startSMSActivity();
-	
-	isWatchDogEvent = false;
+
+
 }
 
 //void watchDogAndSleepActivity()
@@ -343,9 +363,18 @@ bool isSmsValidPhoneNumber(char* phoneNumber)
 //	return false;
 //}
 
-bool isSmsOnPowerSafeOn(char* sms)
+//bool isSmsOnPowerSafeOn(char* sms)
+//{
+//	if (strcmp(sms, "s") == 0)
+//	{
+//		return  true;
+//	}
+//	return false;
+//}
+
+bool isSmsCodeFind(char* sms,char code[1])
 {
-	if (strcmp(sms, "s") == 0)
+	if (strcmp(sms, code) == 0)
 	{
 		return  true;
 	}
@@ -353,7 +382,9 @@ bool isSmsOnPowerSafeOn(char* sms)
 }
 
 void getTaggedSmsFromResponse(char tag) {
+
 	char sms[12] = "";
+
 	exctractSmsTagged(tag, sms);
 
 #ifdef _DEBUG
@@ -379,25 +410,26 @@ void getTaggedSmsFromResponse(char tag) {
 		callPhoneNumber(sms);
 	}
 
-//	if (isSmsOnPowerSafeOff(sms))
-//	{
-//		isOnPowerSafe = false;
-//		callPhoneNumber();
-//#ifdef _DEBUG
-//		debugOnSerial("deactivate safeMode");
-//#endif
-//	}
+	//	if (isSmsOnPowerSafeOff(sms))
+	//	{
+	//		isOnPowerSafe = false;
+	//		callPhoneNumber();
+	//#ifdef _DEBUG
+	//		debugOnSerial("deactivate safeMode");
+	//#endif
+	//	}
 
-	if (isSmsOnPowerSafeOn(sms))
-	{
+	if (isSmsCodeFind(sms,"s")){
 		isOnPowerSafe = true;
+
 		callPhoneNumber();
+		
 		delay(5000);
+
 #ifdef _DEBUG
 		debugOnSerial("deactivate safeMode");
 #endif
 	}
-
 
 	//String response = "";
 	//SoftwareSerial mySerial(0, 3);
@@ -575,7 +607,7 @@ void setup_watchdog(int ii) {
 }
 
 ISR(WDT_vect) {
-	if (watchDogCounter == 2){
+	if (watchDogCounter == 2) {
 		isWatchDogEvent = true;
 		watchDogCounter = 0;
 	}
@@ -590,13 +622,13 @@ ISR(WDT_vect) {
 //	return (int)&v - (__brkval == 0 ? (int)&__heap_start : (int)__brkval);
 //}
 
-//void blinkLedDebug(int time)
-//{
-//	digitalWrite(1, HIGH);
-//	delay(time);
-//	digitalWrite(1, LOW);
-//	delay(time);
-//}
+void blinkLedDebug(int time)
+{
+	digitalWrite(1, HIGH);
+	delay(time);
+	digitalWrite(1, LOW);
+	delay(time);
+}
 
 
 
