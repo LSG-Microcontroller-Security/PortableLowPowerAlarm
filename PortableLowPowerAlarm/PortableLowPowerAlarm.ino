@@ -19,16 +19,11 @@ uint8_t watchDogCounter = 0;
 bool isWatchDogEvent = false;
 //uint8_t voltagePin = A2;
 bool isCallDisabled = false;
+uint8_t wd_timer = 2;
+bool wd_isActive = false;
 
 #define ATD "atd"
 
-
-SoftwareSerial SoftwareDynamicSerial(uint8_t rx, uint8_t tx, long speed, bool inverse_logic = false)
-{
-	SoftwareSerial mySerial(rx, tx, inverse_logic);
-	mySerial.begin(speed);
-	return mySerial;
-}
 
 void setup()
 {
@@ -94,16 +89,21 @@ void loop() {
 		if (!isOnTiltSensorInterrupt) {
 			if (isOnPowerSafe) {
 				turnOff();
-				wdt_disable();
-				enter_sleep();
 			}
+			wd_isActive = false;
+			wdt_disable();
+			enter_sleep();
 		}
 	}
-
+	
 	if (isOnTiltSensorInterrupt && ((millis() - startTimer) > 120000)) {
 		tiltSensorInterruptActivity();
 		turnOffTimer = millis();
-		//setup_watchdog(9);
+		if (!wd_isActive)
+		{
+			setup_watchdog(9);
+			wd_isActive = true;
+		}
 	}
 
 	//WatchDog Sleep Activity
@@ -112,6 +112,13 @@ void loop() {
 		startSMSActivity();
 		isWatchDogEvent = false;
 	}
+}
+
+SoftwareSerial SoftwareDynamicSerial(uint8_t rx, uint8_t tx, long speed, bool inverse_logic = false)
+{
+	SoftwareSerial mySerial(rx, tx, inverse_logic);
+	mySerial.begin(speed);
+	return mySerial;
 }
 
 void startSMSActivity() {
@@ -124,8 +131,9 @@ void tiltSensorInterruptActivity()
 	debugOnSerial("intr");
 #endif
 
-	if (digitalRead(transistorPin) != HIGH) {
+	if (isOnPowerSafe) {
 		turnOn();
+		//setup_watchdog(9);
 	}
 
 	/*wDogTimer = millis();*/
@@ -621,7 +629,7 @@ void setup_watchdog(int ii) {
 }
 
 ISR(WDT_vect) {
-	if (watchDogCounter == 2) {
+	if (watchDogCounter == wd_timer) {
 		isWatchDogEvent = true;
 		watchDogCounter = 0;
 	}
