@@ -14,7 +14,6 @@ uint8_t interruptPin = 2;
 uint8_t transistorPin = 1;
 volatile bool isOnTiltSensorInterrupt = false;
 bool isOnPowerSafe = false;
-bool isWatchDogCicle = false;
 uint8_t watchDogCounter = 0;
 bool isWatchDogEvent = false;
 //uint8_t voltagePin = A2;
@@ -23,7 +22,6 @@ uint8_t wd_timer = 2;
 bool wd_isActive = false;
 
 #define ATD "atd"
-
 
 void setup()
 {
@@ -63,24 +61,7 @@ void setup()
 }
 
 void loop() {
-	//#ifdef _DEBUG
-	//	char data[4];
-	//	itoa(freeRam(), data, 10);
-	//	debugOnSerial(data);
-	//#endif 
-	//if ((millis() - startTimer) < 30000) {
-	//	setup_watchdog(9);
-	//}
-	//	if (isWatchDogEvent)
-//	{
-//#ifdef _DEBUG
-//		blinkLedDebug(1000);
-//		isWatchDogEvent = false;
-//#endif
-//	}
-//	return;
 
-	//SMS Activity for only one time
 	if ((millis() - startTimer) < 120000) {
 		startSMSActivity();
 	}
@@ -133,18 +114,13 @@ void tiltSensorInterruptActivity()
 
 	if (isOnPowerSafe) {
 		turnOn();
-		//setup_watchdog(9);
 	}
-
-	/*wDogTimer = millis();*/
 
 	isOnTiltSensorInterrupt = false;
 
 	callPhoneNumber();
 
 	delay(5000);
-
-	
 }
 
 //void watchDogAndSleepActivity()
@@ -275,7 +251,7 @@ bool exctractSmsTagged(char tag, char* sms)
 	delay(1000);
 
 
-	for (uint8_t index = 1; index < 6; index++)
+	for (uint8_t index = 1; index < 4; index++)
 	{
 		char number[2] = { index + 48 ,'\0' };
 
@@ -447,7 +423,7 @@ void getTaggedSmsFromResponse(char tag) {
 		delay(5000);
 
 #ifdef _DEBUG
-		debugOnSerial("deactivate safeMode");
+		//debugOnSerial("dis.safe");
 #endif
 	}
 
@@ -638,11 +614,11 @@ ISR(WDT_vect) {
 	}
 }
 
-//int freeRam() {
-//	extern int __heap_start, * __brkval;
-//	int v;
-//	return (int)&v - (__brkval == 0 ? (int)&__heap_start : (int)__brkval);
-//}
+int freeRam() {
+	extern int __heap_start, * __brkval;
+	int v;
+	return (int)&v - (__brkval == 0 ? (int)&__heap_start : (int)__brkval);
+}
 
 void blinkLedDebug(int time)
 {
