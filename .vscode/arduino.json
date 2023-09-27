@@ -1,0 +1,6 @@
+{
+    "board": "attiny:avr:ATtinyX5",
+    "port": "/dev/ttyS0",
+    "configuration": "cpu=attiny85,clock=internal1",
+    "sketch": "portableLowPower_new/portableLowPower_new.ino"
+}
