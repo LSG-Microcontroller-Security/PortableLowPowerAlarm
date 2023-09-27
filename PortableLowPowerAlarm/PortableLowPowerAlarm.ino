@@ -8,7 +8,7 @@
 /// 8mhz speed clock is right
 /// </summary>
 
-unsigned long startTimer = 0;
+unsigned long startTimer = 0 ;
 unsigned long turnOffTimer = 0;
 uint8_t interruptPin = 2;
 uint8_t transistorPin = 1;
@@ -544,7 +544,7 @@ void enter_sleep()
 	sleep_enable();
 	sei();
 	sleep_cpu();
-	// …zzz
+	// ï¿½zzz
 	// Wake up
 	sleep_disable();
 	//
