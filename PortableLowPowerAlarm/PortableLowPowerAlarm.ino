@@ -1,45 +1,48 @@
 #include <SoftwareSerial.h>
 #include <avr/sleep.h>
 #include <avr/power.h>
-#include <avr/pgmspace.h>
+#include <avr/pgmspace.h>	
 #include <avr/wdt.h>
 
 /// <summary>
 /// 8mhz speed clock is right
 /// </summary>
 
-unsigned long startTimer = 0 ;
+unsigned long startTimer = 0;
 unsigned long turnOffTimer = 0;
 uint8_t interruptPin = 2;
-uint8_t transistorPin = 1;
+uint8_t sim_module_rx_pin = 1;
+uint8_t sim_module_tx_pin = 3;
+uint8_t debug_tx_pin = 4;
 volatile bool isOnTiltSensorInterrupt = false;
 bool isOnPowerSafe = false;
 uint8_t watchDogCounter = 0;
 bool isWatchDogEvent = false;
-//uint8_t voltagePin = A2;
+// uint8_t voltagePin = A2;
 bool isCallDisabled = false;
 uint8_t wd_timer = 2;
 bool wd_isActive = false;
+uint8_t sim_boot_pin = 0;
 
 #define ATD "atd"
 
 void setup()
 {
-	pinMode(transistorPin, OUTPUT);
-	
+	pinMode(sim_boot_pin, OUTPUT);
+
 	pinMode(interruptPin, INPUT_PULLUP);
 
-	turnOn();
+	turn_on();
 
-	PCMSK |= bit(PCINT2);  // want pin D3 / pin 2
+	PCMSK |= bit(PCINT2); // want pin D3 / pin 2
 
-	GIFR |= bit(PCIF);    // clear any outstanding interrupts
+	GIFR |= bit(PCIF); // clear any outstanding interrupts
 
-	GIMSK |= bit(PCIE);    // enable pin change interrupts
+	GIMSK |= bit(PCIE); // enable pin change interrupts
 
-	setSmsReceiver();
+	set_sms_receiver();
 
-	//analogReference(DEFAULT);
+	// analogReference(DEFAULT);
 
 	callPhoneNumber();
 
@@ -47,9 +50,9 @@ void setup()
 
 	turnOffTimer = millis();
 
-	//wdt_disable();
+	// wdt_disable();
 
-	//setup_watchdog(9); // approximately 4 seconds sleep
+	// setup_watchdog(9); // approximately 4 seconds sleep
 
 	attachInterrupt(0, activateSystemInterrupt, FALLING);
 
@@ -57,27 +60,32 @@ void setup()
 
 	delay(1000);
 
-	//detachInterrupt(0);
+	// detachInterrupt(0);
 }
 
-void loop() {
-
-	if ((millis() - startTimer) < 120000) {
+void loop()
+{
+	if ((millis() - startTimer) < 120000)
+	{
 		startSMSActivity();
 	}
 
-	if ((millis() - turnOffTimer) > 120000) {
-		if (!isOnTiltSensorInterrupt) {
-			if (isOnPowerSafe) {
-				turnOff();
+	if ((millis() - turnOffTimer) > 120000)
+	{
+		if (!isOnTiltSensorInterrupt)
+		{
+			if (isOnPowerSafe)
+			{
+				turn_off();
 			}
 			wd_isActive = false;
 			wdt_disable();
 			enter_sleep();
 		}
 	}
-	
-	if (isOnTiltSensorInterrupt && ((millis() - startTimer) > 120000)) {
+
+	if (isOnTiltSensorInterrupt && ((millis() - startTimer) > 120000))
+	{
 		tiltSensorInterruptActivity();
 		turnOffTimer = millis();
 		if (!wd_isActive)
@@ -87,9 +95,11 @@ void loop() {
 		}
 	}
 
-	//WatchDog Sleep Activity
-	if (isWatchDogEvent && !isOnPowerSafe && ((millis() - startTimer) > 120000)) {
-		//turnOffTimer = millis();
+	// WatchDog Sleep Activity
+	if (isWatchDogEvent && !isOnPowerSafe && ((millis() - startTimer) > 120000))
+	{
+		//blinkLed(1000,1);
+		// turnOffTimer = millis();
 		startSMSActivity();
 		isWatchDogEvent = false;
 	}
@@ -102,7 +112,8 @@ SoftwareSerial SoftwareDynamicSerial(uint8_t rx, uint8_t tx, long speed, bool in
 	return mySerial;
 }
 
-void startSMSActivity() {
+void startSMSActivity()
+{
 	getTaggedSmsFromResponse('#');
 }
 
@@ -112,8 +123,9 @@ void tiltSensorInterruptActivity()
 	debugOnSerial("intr");
 #endif
 
-	if (isOnPowerSafe) {
-		turnOn();
+	if (isOnPowerSafe)
+	{
+		turn_on();
 	}
 
 	isOnTiltSensorInterrupt = false;
@@ -123,13 +135,13 @@ void tiltSensorInterruptActivity()
 	delay(5000);
 }
 
-//void watchDogAndSleepActivity()
+// void watchDogAndSleepActivity()
 //{
 //	if (isWatchDogEvent)
 //	{
-//#ifdef _DEBUG
+// #ifdef _DEBUG
 //		debugOnSerial("wdgEv");
-//#endif
+// #endif
 //		checkBatteryVoltage();
 //	}
 //	//getTaggedSmsFromResponse('#');
@@ -141,11 +153,11 @@ void tiltSensorInterruptActivity()
 //	isWatchDogEvent = false;
 //	enter_sleep();
 //	delay(100);
-//}
+// }
 
-void setSmsReceiver()
+void set_sms_receiver()
 {
-	SoftwareSerial mySerial = SoftwareDynamicSerial(0, 3, 19200);
+	SoftwareSerial mySerial = SoftwareDynamicSerial(sim_module_rx_pin, sim_module_tx_pin, 19200);
 
 	delay(3000);
 
@@ -170,9 +182,9 @@ void setSmsReceiver()
 
 	delay(1000);
 
-	mySerial.println(F("AT"));
-	delay(100);
-	mySerial.println(F("AT+CNETLIGHT=0"));
+	/* mySerial.println(F("AT")); */
+	/* delay(100); */
+	/* mySerial.println(F("AT+CNETLIGHT=0")); */
 
 	delay(1000);
 
@@ -181,15 +193,14 @@ void setSmsReceiver()
 	mySerial.println(F("AT+CSCLK=2"));
 
 	delay(1000);
-
 }
 
-void debugOnSerial(char* stringa)
+void debugOnSerial(char *stringa)
 {
-	//return;
-	//use on pin 4 (A2) be careful to remove analog function.
-	SoftwareSerial mySerial = SoftwareDynamicSerial(99, 4, 9600);
-	mySerial.print(F("...")); mySerial.println(stringa);
+	// return;
+	// use on pin 4 (A2) be careful to remove analog function.
+	// SoftwareSerial mySerial = SoftwareDynamicSerial(99, debug_tx_pin, 9600);
+	// mySerial.print(F("...")); mySerial.println(stringa);
 }
 
 void activateSystemInterrupt()
@@ -197,18 +208,24 @@ void activateSystemInterrupt()
 	isOnTiltSensorInterrupt = true;
 }
 
-void turnOn()
+void turn_on()
 {
-	digitalWrite(transistorPin, HIGH);
+	digitalWrite(sim_boot_pin, HIGH);
+	delay(500);
+	digitalWrite(sim_boot_pin, LOW);
 	delay(20000);
 }
 
-void turnOff()
+void turn_off()
 {
-	digitalWrite(transistorPin, LOW);
+	digitalWrite(sim_boot_pin, HIGH);
+	delay(500);
+	digitalWrite(sim_boot_pin, LOW);
+	delay(5000);
+	digitalWrite(sim_boot_pin, HIGH);
 }
 
-//void checkBatteryVoltage()
+// void checkBatteryVoltage()
 //{
 //	float measure = 0;
 //
@@ -237,23 +254,23 @@ void turnOff()
 //		turnOff();
 //	}
 //	isWatchDogEvent = false;
-//}
+// }
 
-bool exctractSmsTagged(char tag, char* sms)
+bool exctractSmsTagged(char tag, char *sms)
 {
 	bool returnValue = false;
 
-	SoftwareSerial mySerial = SoftwareDynamicSerial(0, 3, 19200);
-
-	while (mySerial.available() > 0) {
+	SoftwareSerial mySerial = SoftwareDynamicSerial(sim_module_rx_pin, sim_module_tx_pin, 19200);
+	// clear buffer
+	while (mySerial.available() > 0)
+	{
 		mySerial.read();
 	}
 	delay(1000);
 
-
 	for (uint8_t index = 1; index < 4; index++)
 	{
-		char number[2] = { index + 48 ,'\0' };
+		char number[2] = {index + 48, '\0'};
 
 		char command[10] = "AT+CMGR=";
 
@@ -271,6 +288,7 @@ bool exctractSmsTagged(char tag, char* sms)
 		{
 			if (mySerial.readStringUntil(tag).length() > 0)
 			{
+				// blinkLed(1000);
 				if (mySerial.available() > 0)
 				{
 					mySerial.readStringUntil(tag).toCharArray(sms, 20, 0);
@@ -284,14 +302,13 @@ bool exctractSmsTagged(char tag, char* sms)
 					returnValue = true;
 				}
 			}
-
 		}
 	}
 
 	return returnValue;
 }
 
-//void clearAllSms()
+// void clearAllSms()
 //{
 //	SoftwareSerial mySerial(0, 3);
 //	mySerial.begin(19200);
@@ -299,9 +316,9 @@ bool exctractSmsTagged(char tag, char* sms)
 //	mySerial.println(F("AT"));
 //	delay(100);
 //	mySerial.println(F("AT+CMGD=1,4"));
-//}
+// }
 
-//bool isSmsValidPhoneNumber(char* phoneNumber)
+// bool isSmsValidPhoneNumber(char* phoneNumber)
 //{
 //	char phone_c = ' ';
 //	uint8_t cicle = 0;
@@ -329,36 +346,37 @@ bool exctractSmsTagged(char tag, char* sms)
 //	//	return true;
 //	//}
 //	//else { return false; }
-//}
+// }
 
-//bool isSmsOnPowerSafeOff(char* sms)
+// bool isSmsOnPowerSafeOff(char* sms)
 //{
 //	if (strcmp(sms, "y") == 0)
 //	{
 //		return  true;
 //	}
 //	return false;
-//}
+// }
 
-//bool isSmsOnPowerSafeOn(char* sms)
+// bool isSmsOnPowerSafeOn(char* sms)
 //{
 //	if (strcmp(sms, "s") == 0)
 //	{
 //		return  true;
 //	}
 //	return false;
-//}
+// }
 
-bool isSmsCodeFind(char* sms,char code[1])
+bool isSmsCodeFind(char *sms, char code[1])
 {
 	if (strcmp(sms, code) == 0)
 	{
-		return  true;
+		return true;
 	}
 	return false;
 }
 
-void getTaggedSmsFromResponse(char tag) {
+void getTaggedSmsFromResponse(char tag)
+{
 
 	char sms[12] = "";
 
@@ -372,7 +390,7 @@ void getTaggedSmsFromResponse(char tag) {
 
 	phone_c = sms[0];
 
-	//check if sms is a configuration phone number
+	// check if sms is a configuration phone number
 	if (phone_c >= 48 && phone_c <= 57)
 	{
 		char charToWrite = ' ';
@@ -382,30 +400,32 @@ void getTaggedSmsFromResponse(char tag) {
 			charToWrite = sms[cicle];
 			if (charToWrite != '\0')
 			{
-				//char s[1]{};
-				//s[0] = charToWrite;
-				//debugOnSerial(s);
-				eeprom_write_byte((uint8_t*)cicle, charToWrite);
+				// char s[1]{};
+				// s[0] = charToWrite;
+				// debugOnSerial(s);
+				eeprom_write_byte((uint8_t *)cicle, charToWrite);
 				cicle++;
 			}
 		}
-		callPhoneNumber(sms);
+		callPhoneNumber();
 	}
 
 	//	if (isSmsOnPowerSafeOff(sms))
 	//	{
 	//		isOnPowerSafe = false;
 	//		callPhoneNumber();
-	//#ifdef _DEBUG
+	// #ifdef _DEBUG
 	//		debugOnSerial("deactivate safeMode");
-	//#endif
+	// #endif
 	//	}
 
-	if (isSmsCodeFind(sms, "x")) {
+	if (isSmsCodeFind(sms, "x"))
+	{
 		isCallDisabled = true;
 	}
 
-	if (isSmsCodeFind(sms, "y")) {
+	if (isSmsCodeFind(sms, "y"))
+	{
 
 		isCallDisabled = false;
 
@@ -414,28 +434,29 @@ void getTaggedSmsFromResponse(char tag) {
 		delay(5000);
 	}
 
-	if (isSmsCodeFind(sms,"s")){
+	if (isSmsCodeFind(sms, "s"))
+	{
 
 		isOnPowerSafe = true;
 
 		callPhoneNumber();
-		
+
 		delay(5000);
 
 #ifdef _DEBUG
-		//debugOnSerial("dis.safe");
+		// debugOnSerial("dis.safe");
 #endif
 	}
 
-	//String response = "";
-	//SoftwareSerial mySerial(0, 3);
-	//mySerial.begin(19200);
-	//delay(1000);
-	//mySerial.readString();
-	//delay(1000);
-	//mySerial.println("AT+CMGR=1");
-	//delay(2000);
-	//if (mySerial.available() > 0)
+	// String response = "";
+	// SoftwareSerial mySerial(0, 3);
+	// mySerial.begin(19200);
+	// delay(1000);
+	// mySerial.readString();
+	// delay(1000);
+	// mySerial.println("AT+CMGR=1");
+	// delay(2000);
+	// if (mySerial.available() > 0)
 	//{
 	//	response = mySerial.readStringUntil('#');
 	//	if (response.length() > 0)
@@ -443,7 +464,7 @@ void getTaggedSmsFromResponse(char tag) {
 	//		if (mySerial.available() > 0)
 	//		{
 	//			String phoneNumber = mySerial.readString();
-	//			
+	//
 	//			bool verify = true;
 
 	//			for (uint8_t i = 0; i < 10; i++)
@@ -474,9 +495,9 @@ void getTaggedSmsFromResponse(char tag) {
 	//		}
 	//	}
 	//}
-	//return;
+	// return;
 
-	//if (mySerial.available() > 0)
+	// if (mySerial.available() > 0)
 	//{
 	//	if (mySerial.readString().indexOf('#') != -1)
 	//	{
@@ -537,9 +558,9 @@ void enter_sleep()
 	byte adcsra;
 	cli();
 	set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-	adcsra = ADCSRA;               //save the ADC Control and Status Register A
-	//mySerial.print("adcsra = "); mySerial.println(adcsra,HEX);
-	ADCSRA = 0; // Turn off ADC
+	adcsra = ADCSRA; // save the ADC Control and Status Register A
+	// mySerial.print("adcsra = "); mySerial.println(adcsra,HEX);
+	ADCSRA = 0;			 // Turn off ADC
 	power_all_disable(); // Power off ADC, Timer 0 and 1, serial interface
 	sleep_enable();
 	sei();
@@ -549,32 +570,34 @@ void enter_sleep()
 	sleep_disable();
 	//
 	power_all_enable(); // Power everything back on
-	ADCSRA = adcsra;               //restore ADCSRA
+	ADCSRA = adcsra;	// restore ADCSRA
 }
 
 void callPhoneNumber()
 {
-	if (isCallDisabled) return;
+	if (isCallDisabled)
+		return;
 
 	char phoneNumber[11]{};
 
 	for (uint8_t i = 0; i < 10; i++)
 	{
-		phoneNumber[i] = (char)eeprom_read_byte((uint8_t*)i);
+		phoneNumber[i] = (char)eeprom_read_byte((uint8_t *)i);
 	}
 
 	strcat(phoneNumber, "\0");
 
-	callPhoneNumber(phoneNumber); \
+	callPhoneNumber(phoneNumber);
 }
 
-void callPhoneNumber(char* phoneNumber)
+void callPhoneNumber(char *phoneNumber)
 {
-	SoftwareSerial mySerial = SoftwareDynamicSerial(0, 3, 19200);
+	SoftwareSerial mySerial = SoftwareDynamicSerial(sim_module_rx_pin, sim_module_tx_pin, 19200);
+
 	char command[30]{};
-	//mySerial.println("AT");
-	//delay(100);
-	//globalString = F("atd");
+	// mySerial.println("AT");
+	// delay(100);
+	// globalString = F("atd");
 	strcat(command, ATD);
 	strcat(command, phoneNumber);
 	strcat(command, ";");
@@ -583,16 +606,18 @@ void callPhoneNumber(char* phoneNumber)
 	delay(100);
 	mySerial.println(command);
 	delay(7000);
-
 }
 
-void setup_watchdog(int ii) {
+void setup_watchdog(int ii)
+{
 
 	byte bb;
 	int ww;
-	if (ii > 9) ii = 9;
+	if (ii > 9)
+		ii = 9;
 	bb = ii & 7;
-	if (ii > 7) bb |= (1 << 5);
+	if (ii > 7)
+		bb |= (1 << 5);
 	bb |= (1 << WDCE);
 	ww = bb;
 
@@ -604,41 +629,33 @@ void setup_watchdog(int ii) {
 	WDTCR |= _BV(WDIE);
 }
 
-ISR(WDT_vect) {
-	if (watchDogCounter == wd_timer) {
+ISR(WDT_vect)
+{
+	if (watchDogCounter == wd_timer)
+	{
 		isWatchDogEvent = true;
 		watchDogCounter = 0;
 	}
-	else {
+	else
+	{
 		watchDogCounter++;
 	}
 }
 
-int freeRam() {
-	extern int __heap_start, * __brkval;
+int freeRam()
+{
+	extern int __heap_start, *__brkval;
 	int v;
 	return (int)&v - (__brkval == 0 ? (int)&__heap_start : (int)__brkval);
 }
 
-void blinkLedDebug(int time)
+void blinkLed(int millsDelay, uint8_t cicle)
 {
-	digitalWrite(1, HIGH);
-	delay(time);
-	digitalWrite(1, LOW);
-	delay(time);
+	for (uint8_t i = 0; i < cicle; i++)
+	{
+		digitalWrite(sim_boot_pin, HIGH);
+		delay(millsDelay);
+		digitalWrite(sim_boot_pin, LOW);
+		delay(millsDelay);
+	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
