@@ -1,4 +1,5 @@
 {
     "board": "attiny:avr:ATtinyX5",
-    "port": "/dev/ttyS0"
+    "port": "/dev/ttyS0",
+    "configuration": "cpu=attiny85,clock=internal8"
 }

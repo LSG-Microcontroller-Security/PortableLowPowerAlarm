@@ -1,7 +1,7 @@
 #include <SoftwareSerial.h>
 #include <avr/sleep.h>
 #include <avr/power.h>
-#include <avr/pgmspace.h>	
+#include <avr/pgmspace.h>
 #include <avr/wdt.h>
 
 /// <summary>
@@ -25,6 +25,15 @@ bool wd_isActive = false;
 uint8_t sim_boot_pin = 0;
 
 #define ATD "atd"
+#define ENABLE_POWER_SAFE "s"
+#define ENABLE_CALLS "y"
+#define DISABLE_CALLS "x"
+#define DELETE_X_SMS_ELEMENT "AT+CMGD="
+#define READ_X_SMS_ELEMENT "AT+CMGR="
+
+//#define _DEBUG
+
+SoftwareSerial SoftwareDynamicSerial(uint8_t rx, uint8_t tx, long speed, bool inverse_logic = false);
 
 void setup()
 {
@@ -65,6 +74,10 @@ void setup()
 
 void loop()
 {
+	// debugOnSerial("Ciao mondo");
+	// delay(1000);
+	// return;
+
 	if ((millis() - startTimer) < 120000)
 	{
 		startSMSActivity();
@@ -98,11 +111,51 @@ void loop()
 	// WatchDog Sleep Activity
 	if (isWatchDogEvent && !isOnPowerSafe && ((millis() - startTimer) > 120000))
 	{
-		//blinkLed(1000,1);
-		// turnOffTimer = millis();
+		// blinkLed(1000,1);
+		//  turnOffTimer = millis();
 		startSMSActivity();
 		isWatchDogEvent = false;
 	}
+}
+
+void set_sms_receiver()
+{
+	SoftwareSerial mySerial = SoftwareDynamicSerial(sim_module_rx_pin, sim_module_tx_pin, 19200);
+
+	delay(3000);
+
+	mySerial.println(F("AT"));
+
+	delay(100);
+
+	mySerial.println(F("AT+CPMS=\"SM\""));
+
+	delay(1000);
+
+	mySerial.println(F("AT"));
+
+	delay(100);
+	mySerial.println(F("AT+CMGF=1"));
+
+	delay(1000);
+
+	mySerial.println(F("AT"));
+	delay(100);
+	mySerial.println(F("AT+CMGD=1,4"));
+
+	delay(1000);
+
+	mySerial.println(F("AT"));
+	delay(100);
+	mySerial.println(F("AT+CNETLIGHT=0"));
+
+	delay(1000);
+
+	mySerial.println(F("AT"));
+	delay(100);
+	mySerial.println(F("AT+CSCLK=2"));
+
+	delay(1000);
 }
 
 SoftwareSerial SoftwareDynamicSerial(uint8_t rx, uint8_t tx, long speed, bool inverse_logic = false)
@@ -155,52 +208,14 @@ void tiltSensorInterruptActivity()
 //	delay(100);
 // }
 
-void set_sms_receiver()
-{
-	SoftwareSerial mySerial = SoftwareDynamicSerial(sim_module_rx_pin, sim_module_tx_pin, 19200);
 
-	delay(3000);
-
-	mySerial.println(F("AT"));
-
-	delay(100);
-
-	mySerial.println(F("AT+CPMS=\"SM\""));
-
-	delay(1000);
-
-	mySerial.println(F("AT"));
-
-	delay(100);
-	mySerial.println(F("AT+CMGF=1"));
-
-	delay(1000);
-
-	mySerial.println(F("AT"));
-	delay(100);
-	mySerial.println(F("AT+CMGD=1,4"));
-
-	delay(1000);
-
-	/* mySerial.println(F("AT")); */
-	/* delay(100); */
-	/* mySerial.println(F("AT+CNETLIGHT=0")); */
-
-	delay(1000);
-
-	mySerial.println(F("AT"));
-	delay(100);
-	mySerial.println(F("AT+CSCLK=2"));
-
-	delay(1000);
-}
 
 void debugOnSerial(char *stringa)
 {
-	// return;
 	// use on pin 4 (A2) be careful to remove analog function.
-	// SoftwareSerial mySerial = SoftwareDynamicSerial(99, debug_tx_pin, 9600);
-	// mySerial.print(F("...")); mySerial.println(stringa);
+	SoftwareSerial mySerial = SoftwareDynamicSerial(99, debug_tx_pin, 9600);
+	mySerial.print(F("..."));
+	mySerial.println(stringa);
 }
 
 void activateSystemInterrupt()
@@ -272,7 +287,7 @@ bool exctractSmsTagged(char tag, char *sms)
 	{
 		char number[2] = {index + 48, '\0'};
 
-		char command[10] = "AT+CMGR=";
+		char command[10] = READ_X_SMS_ELEMENT;
 
 		strcat(command, number);
 
@@ -293,7 +308,7 @@ bool exctractSmsTagged(char tag, char *sms)
 				{
 					mySerial.readStringUntil(tag).toCharArray(sms, 20, 0);
 
-					char command[10] = "AT+CMGD=";
+					char command[10] = DELETE_X_SMS_ELEMENT;
 
 					strcat(command, number);
 
@@ -419,12 +434,12 @@ void getTaggedSmsFromResponse(char tag)
 	// #endif
 	//	}
 
-	if (isSmsCodeFind(sms, "x"))
+	if (isSmsCodeFind(sms, DISABLE_CALLS))
 	{
 		isCallDisabled = true;
 	}
 
-	if (isSmsCodeFind(sms, "y"))
+	if (isSmsCodeFind(sms, ENABLE_CALLS))
 	{
 
 		isCallDisabled = false;
@@ -434,7 +449,7 @@ void getTaggedSmsFromResponse(char tag)
 		delay(5000);
 	}
 
-	if (isSmsCodeFind(sms, "s"))
+	if (isSmsCodeFind(sms, ENABLE_POWER_SAFE))
 	{
 
 		isOnPowerSafe = true;
@@ -565,7 +580,7 @@ void enter_sleep()
 	sleep_enable();
 	sei();
 	sleep_cpu();
-	// �zzz
+	// zzz
 	// Wake up
 	sleep_disable();
 	//
@@ -606,6 +621,9 @@ void callPhoneNumber(char *phoneNumber)
 	delay(100);
 	mySerial.println(command);
 	delay(7000);
+	mySerial.println(F("AT"));
+	delay(100);
+	mySerial.println(F("AT+CNETLIGHT=0"));
 }
 
 void setup_watchdog(int ii)
