@@ -10,19 +10,20 @@
 
 unsigned long startTimer = 0;
 unsigned long turnOffTimer = 0;
-uint8_t interruptPin = 2;
-uint8_t sim_module_rx_pin = 1;
-uint8_t sim_module_tx_pin = 3;
-uint8_t debug_tx_pin = 4;
 volatile bool isOnTiltSensorInterrupt = false;
 bool isOnPowerSafe = false;
-uint8_t watchDogCounter = 0;
-bool isWatchDogEvent = false;
+volatile uint8_t watchDogCounter = 0;
+volatile bool isWatchDogEvent = false;
 // uint8_t voltagePin = A2;
 bool isCallDisabled = false;
 uint8_t wd_timer = 2;
 bool wd_isActive = false;
+
 uint8_t sim_boot_pin = 0;
+uint8_t sim_module_rx_pin = 1;
+uint8_t interrupt_pin = 2;
+uint8_t sim_module_tx_pin = 3;
+uint8_t debug_tx_pin = 4;
 
 #define ATD "atd"
 #define ENABLE_POWER_SAFE "s"
@@ -39,7 +40,7 @@ void setup()
 {
 	pinMode(sim_boot_pin, OUTPUT);
 
-	pinMode(interruptPin, INPUT_PULLUP);
+	pinMode(interrupt_pin, INPUT_PULLUP);
 
 	turn_on();
 
