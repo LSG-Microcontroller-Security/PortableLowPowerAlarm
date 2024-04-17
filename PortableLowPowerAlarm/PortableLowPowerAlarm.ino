@@ -1,4 +1,4 @@
-#include <SoftwareSerial.h>
+#include "internal_libraries/SoftwareSerial.h"
 #include <avr/sleep.h>
 #include <avr/power.h>
 #include <avr/pgmspace.h>
@@ -12,12 +12,12 @@ unsigned long startTimer = 0;
 unsigned long turnOffTimer = 0;
 volatile bool isOnTiltSensorInterrupt = false;
 bool isOnPowerSafe = false;
-volatile uint8_t watchDogCounter = 0;
-volatile bool isWatchDogEvent = false;
+//volatile uint8_t watchDogCounter = 0;
+//volatile bool isWatchDogEvent = false;
 // uint8_t voltagePin = A2;
 bool isCallDisabled = false;
-uint8_t wd_timer = 2;
-bool wd_isActive = false;
+//uint8_t wd_timer = 2;
+//bool wd_isActive = false;
 
 uint8_t sim_boot_pin = 0;
 uint8_t sim_module_rx_pin = 1;
@@ -34,7 +34,6 @@ uint8_t debug_tx_pin = 4;
 
 //#define _DEBUG
 
-SoftwareSerial SoftwareDynamicSerial(uint8_t rx, uint8_t tx, long speed, bool inverse_logic = false);
 
 void setup()
 {
@@ -42,7 +41,11 @@ void setup()
 
 	pinMode(interrupt_pin, INPUT_PULLUP);
 
-	turn_on();
+	digitalWrite(sim_boot_pin, LOW);
+
+	delay(1000);
+
+	//turn_on();
 
 	PCMSK |= bit(PCINT2); // want pin D3 / pin 2
 
@@ -60,13 +63,9 @@ void setup()
 
 	turnOffTimer = millis();
 
-	// wdt_disable();
-
-	// setup_watchdog(9); // approximately 4 seconds sleep
-
 	attachInterrupt(0, activateSystemInterrupt, FALLING);
 
-	setup_watchdog(9);
+	//setup_watchdog(9);
 
 	delay(1000);
 
@@ -92,8 +91,9 @@ void loop()
 			{
 				turn_off();
 			}
-			wd_isActive = false;
-			wdt_disable();
+			/*wd_isActive = false;*/
+			/*wdt_disable();*/
+			turnOffTimer = 0;
 			enter_sleep();
 		}
 	}
@@ -101,27 +101,33 @@ void loop()
 	if (isOnTiltSensorInterrupt && ((millis() - startTimer) > 120000))
 	{
 		tiltSensorInterruptActivity();
-		turnOffTimer = millis();
-		if (!wd_isActive)
-		{
-			setup_watchdog(9);
-			wd_isActive = true;
-		}
+		//delay(60000);
+		/*if (isOnTiltSensorInterrupt != true)
+		{*/
+			turnOffTimer = millis();
+			/*if (!wd_isActive)
+			{
+				setup_watchdog(9);
+				wd_isActive = true;
+			}*/
+		//}
 	}
 
 	// WatchDog Sleep Activity
-	if (isWatchDogEvent && !isOnPowerSafe && ((millis() - startTimer) > 120000))
-	{
-		// blinkLed(1000,1);
-		//  turnOffTimer = millis();
-		startSMSActivity();
-		isWatchDogEvent = false;
-	}
+	//if (isWatchDogEvent && !isOnPowerSafe && ((millis() - startTimer) > 120000))
+	//{
+	//	// blinkLed(1000,1);
+	//	//  turnOffTimer = millis();
+	//	startSMSActivity();
+	//	isWatchDogEvent = false;
+	//}
 }
 
 void set_sms_receiver()
 {
-	SoftwareSerial mySerial = SoftwareDynamicSerial(sim_module_rx_pin, sim_module_tx_pin, 19200);
+	SoftwareSerial mySerial(sim_module_rx_pin, sim_module_tx_pin,false);
+
+	mySerial.begin(19200);
 
 	delay(3000);
 
@@ -159,12 +165,12 @@ void set_sms_receiver()
 	delay(1000);
 }
 
-SoftwareSerial SoftwareDynamicSerial(uint8_t rx, uint8_t tx, long speed, bool inverse_logic = false)
-{
-	SoftwareSerial mySerial(rx, tx, inverse_logic);
-	mySerial.begin(speed);
-	return mySerial;
-}
+//SoftwareSerial SoftwareDynamicSerial(uint8_t rx, uint8_t tx, long speed, bool inverse_logic = false)
+//{
+//	SoftwareSerial mySerial(rx, tx, inverse_logic);
+//	mySerial.begin(speed);
+//	return mySerial;
+//}
 
 void startSMSActivity()
 {
@@ -177,7 +183,7 @@ void tiltSensorInterruptActivity()
 	debugOnSerial("intr");
 #endif
 
-	if (isOnPowerSafe)
+	if (isOnPowerSafe && turnOffTimer == 0)
 	{
 		turn_on();
 	}
@@ -209,12 +215,11 @@ void tiltSensorInterruptActivity()
 //	delay(100);
 // }
 
-
-
 void debugOnSerial(char *stringa)
 {
 	// use on pin 4 (A2) be careful to remove analog function.
-	SoftwareSerial mySerial = SoftwareDynamicSerial(99, debug_tx_pin, 9600);
+	SoftwareSerial mySerial(sim_module_rx_pin, sim_module_tx_pin,false);
+	mySerial.begin(9600);
 	mySerial.print(F("..."));
 	mySerial.println(stringa);
 }
@@ -276,7 +281,12 @@ bool exctractSmsTagged(char tag, char *sms)
 {
 	bool returnValue = false;
 
-	SoftwareSerial mySerial = SoftwareDynamicSerial(sim_module_rx_pin, sim_module_tx_pin, 19200);
+	SoftwareSerial mySerial(sim_module_rx_pin, sim_module_tx_pin, false);
+
+	mySerial.begin(19200);
+
+	delay(3000);
+
 	// clear buffer
 	while (mySerial.available() > 0)
 	{
@@ -608,7 +618,11 @@ void callPhoneNumber()
 
 void callPhoneNumber(char *phoneNumber)
 {
-	SoftwareSerial mySerial = SoftwareDynamicSerial(sim_module_rx_pin, sim_module_tx_pin, 19200);
+	SoftwareSerial mySerial(sim_module_rx_pin, sim_module_tx_pin, false);
+
+	mySerial.begin(19200);
+
+	delay(3000);
 
 	char command[30]{};
 	// mySerial.println("AT");
@@ -619,47 +633,47 @@ void callPhoneNumber(char *phoneNumber)
 	strcat(command, ";");
 	strcat(command, "\0");
 	mySerial.println(F("AT"));
-	delay(100);
+	delay(1000);
 	mySerial.println(command);
-	delay(7000);
+	delay(10000);
 	mySerial.println(F("AT"));
-	delay(100);
+	delay(1000);
 	mySerial.println(F("AT+CNETLIGHT=0"));
 }
 
-void setup_watchdog(int ii)
-{
+//void setup_watchdog(int ii)
+//{
+//
+//	byte bb;
+//	int ww;
+//	if (ii > 9)
+//		ii = 9;
+//	bb = ii & 7;
+//	if (ii > 7)
+//		bb |= (1 << 5);
+//	bb |= (1 << WDCE);
+//	ww = bb;
+//
+//	MCUSR &= ~(1 << WDRF);
+//	// start timed sequence
+//	WDTCR |= (1 << WDCE) | (1 << WDE);
+//	// set new watchdog timeout value
+//	WDTCR = bb;
+//	WDTCR |= _BV(WDIE);
+//}
 
-	byte bb;
-	int ww;
-	if (ii > 9)
-		ii = 9;
-	bb = ii & 7;
-	if (ii > 7)
-		bb |= (1 << 5);
-	bb |= (1 << WDCE);
-	ww = bb;
-
-	MCUSR &= ~(1 << WDRF);
-	// start timed sequence
-	WDTCR |= (1 << WDCE) | (1 << WDE);
-	// set new watchdog timeout value
-	WDTCR = bb;
-	WDTCR |= _BV(WDIE);
-}
-
-ISR(WDT_vect)
-{
-	if (watchDogCounter == wd_timer)
-	{
-		isWatchDogEvent = true;
-		watchDogCounter = 0;
-	}
-	else
-	{
-		watchDogCounter++;
-	}
-}
+//ISR(WDT_vect)
+//{
+//	if (watchDogCounter == wd_timer)
+//	{
+//		isWatchDogEvent = true;
+//		watchDogCounter = 0;
+//	}
+//	else
+//	{
+//		watchDogCounter++;
+//	}
+//}
 
 int freeRam()
 {

@@ -20,16 +20,14 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>
-    </PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>
-    </PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -77,10 +75,10 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\portableLowPower_new;$(ProjectDir)..\..\libraries\ActivityFramework;$(ProjectDir)..\..\..\..\Users\luigi.santagada\AppData\Local\arduino15\packages\arduino\hardware\avr\1.8.6\libraries\SoftwareSerial\src;$(ProjectDir)..\..\..\..\Users\luigi.santagada\AppData\Local\arduino15\packages\arduino\hardware\avr\1.8.6\cores\arduino;$(ProjectDir)..\..\..\..\Users\luigi.santagada\AppData\Local\arduino15\packages\attiny\hardware\avr\1.0.2\variants\tiny8;$(ProjectDir)..\..\..\MICROC~1\PORTAB~3\PORTAB~2;$(ProjectDir)..\..\..\..\Users\luigi.santagada\AppData\Local\arduino15\packages\arduino\tools\avr-gcc\7.3.0-atmel3.6.1-arduino7\\lib\gcc\avr\7.3.0\include;$(ProjectDir)..\..\..\..\Users\luigi.santagada\AppData\Local\arduino15\packages\arduino\tools\avr-gcc\7.3.0-atmel3.6.1-arduino7\avr\include;$(ProjectDir)..\..\..\..\Users\luigi.santagada\AppData\Local\arduino15\packages\arduino\tools\avr-gcc\7.3.0-atmel3.6.1-arduino7\\lib\gcc\avr\7.3.0\include;$(ProjectDir)..\..\..\..\Users\luigi.santagada\AppData\Local\arduino15\packages\arduino\tools\avr-gcc\7.3.0-atmel3.6.1-arduino7\avr\include-fixed;$(ProjectDir)..\..\..\..\Users\luigi.santagada\AppData\Local\arduino15\packages\arduino\tools\avr-gcc\7.3.0-atmel3.6.1-arduino7\avr\include\avr;$(ProjectDir)..\..\..\..\Users\luigi.santagada\AppData\Local\arduino15\packages\arduino\tools\avr-gcc\7.3.0-atmel3.6.1-arduino7\lib\gcc\avr\4.8.1\include;$(ProjectDir)..\..\..\..\Users\luigi.santagada\AppData\Local\arduino15\packages\arduino\tools\avr-gcc\7.3.0-atmel3.6.1-arduino7\lib\gcc\avr\4.9.2\include;$(ProjectDir)..\..\..\..\Users\luigi.santagada\AppData\Local\arduino15\packages\arduino\tools\avr-gcc\7.3.0-atmel3.6.1-arduino7\lib\gcc\avr\4.9.3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\portableLowPower_new;$(ProjectDir)..\..\..\..\Users\luigi.santagada\AppData\Local\arduino15\packages\arduino\hardware\avr\1.8.6\cores\arduino;$(ProjectDir)..\..\..\..\Users\luigi.santagada\AppData\Local\arduino15\packages\attiny\hardware\avr\1.0.2\variants\tiny8;$(ProjectDir)..\..\..\MicroControllerTeamProject\libraries\ActivityFramework;$(ProjectDir)..\..\..\MicroControllerTeamProject\libraries\ActivityFramework\utility;$(ProjectDir)..\..\..\..\Users\luigi.santagada\AppData\Local\arduino15\packages\arduino\hardware\avr\1.8.6\libraries\SoftwareSerial\src;$(ProjectDir)..\..\..\..\\Repos\\LSG-Microcontroller-Security\\PortableLowPowerAlarm\\portableLowPower_new;$(ProjectDir)..\..\..\..\\Users\\luigi.santagada\\AppData\\Local\\arduino15\\packages\\arduino\\hardware\\avr\\1.8.6\\cores\\arduino;$(ProjectDir)..\..\..\..\\Users\\luigi.santagada\\AppData\\Local\\arduino15\\packages\\attiny\\hardware\\avr\\1.0.2\\variants\\tiny8;$(ProjectDir)..\..\..\..\\Repos\\MicroControllerTeamProject\\libraries\\ActivityFramework;$(ProjectDir)..\..\..\..\\Repos\\MicroControllerTeamProject\\libraries\\ActivityFramework\\utility;$(ProjectDir)..\..\..\..\\Users\\luigi.santagada\\AppData\\Local\\arduino15\\packages\\arduino\\hardware\\avr\\1.8.6\\libraries\\SoftwareSerial\\src;$(ProjectDir)..\..\..\..\\Users\\luigi.santagada\\AppData\\Local\\arduino15\\packages\\arduino\\tools\\avr-gcc\\7.3.0-atmel3.6.1-arduino7\\\\lib\\gcc\\avr\\7.3.0\\include;$(ProjectDir)..\..\..\..\\Users\\luigi.santagada\\AppData\\Local\\arduino15\\packages\\arduino\\tools\\avr-gcc\\7.3.0-atmel3.6.1-arduino7\\avr\\include;$(ProjectDir)..\..\..\..\\Users\\luigi.santagada\\AppData\\Local\\arduino15\\packages\\arduino\\tools\\avr-gcc\\7.3.0-atmel3.6.1-arduino7\\\\lib\\gcc\\avr\\7.3.0\\include;$(ProjectDir)..\..\..\..\\Users\\luigi.santagada\\AppData\\Local\\arduino15\\packages\\arduino\\tools\\avr-gcc\\7.3.0-atmel3.6.1-arduino7\\avr\\include-fixed;$(ProjectDir)..\..\..\..\\Users\\luigi.santagada\\AppData\\Local\\arduino15\\packages\\arduino\\tools\\avr-gcc\\7.3.0-atmel3.6.1-arduino7\\avr\\include\\avr;$(ProjectDir)..\..\..\..\\Users\\luigi.santagada\\AppData\\Local\\arduino15\\packages\\arduino\\tools\\avr-gcc\\7.3.0-atmel3.6.1-arduino7\\lib\\gcc\\avr\\4.8.1\\include;$(ProjectDir)..\..\..\..\\Users\\luigi.santagada\\AppData\\Local\\arduino15\\packages\\arduino\\tools\\avr-gcc\\7.3.0-atmel3.6.1-arduino7\\lib\\gcc\\avr\\4.9.2\\include;$(ProjectDir)..\..\..\..\\Users\\luigi.santagada\\AppData\\Local\\arduino15\\packages\\arduino\\tools\\avr-gcc\\7.3.0-atmel3.6.1-arduino7\\lib\\gcc\\avr\\4.9.3\\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>$(ProjectDir)__vm\.portableLowPower_new.vsarduino.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
       <IgnoreStandardIncludePath>true</IgnoreStandardIncludePath>
-      <PreprocessorDefinitions>__AVR_attiny85__;__AVR_ATTINY85__;__AVR_ATtiny85__;F_CPU=8000000L;ARDUINO=10805;ARDUINO_attiny;ARDUINO_ARCH_AVR;__cplusplus=201103L;_VMICRO_INTELLISENSE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_VMICRO_INTELLISENSE;__AVR_attiny85__;__AVR_ATTINY85__;__AVR_ATtiny85__;F_CPU=8000000L;ARDUINO=10805;ARDUINO_attiny;ARDUINO_ARCH_AVR;__cplusplus=201103L;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -110,9 +108,10 @@
     <DebuggerFlavor>VisualMicroDebugger</DebuggerFlavor>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="portableLowPower_new.ino">
+    <ClCompile Include="portableLowPower_new.ino">
       <FileType>CppCode</FileType>
-    </None>
+      <DeploymentContent>true</DeploymentContent>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="__vm\.portableLowPower_new.vsarduino.h" />

@@ -15,11 +15,11 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="portableLowPower_new.ino" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="__vm\.portableLowPower_new.vsarduino.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="portableLowPower_new.ino" />
   </ItemGroup>
 </Project>
