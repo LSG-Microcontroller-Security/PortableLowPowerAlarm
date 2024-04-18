@@ -1,4 +1,4 @@
-#include "internal_libraries/SoftwareSerial.h"
+#include <SoftwareSerial.h>
 #include <avr/sleep.h>
 #include <avr/power.h>
 #include <avr/pgmspace.h>
@@ -19,8 +19,6 @@ bool is_call_disabled = false;
 //uint8_t wd_timer = 2;
 //bool wd_isActive = false;
 
-bool is_debug_writing_enable = false;
-
 uint8_t sim_boot_pin = 0;
 uint8_t sim_module_rx_pin = 1;
 uint8_t interrupt_pin = 2;
@@ -36,16 +34,19 @@ uint8_t debug_tx_pin = 4;
 
 //#define _DEBUG
 
-
 void setup()
 {
+	delay(5000);
+
+#ifdef _DEBUG
+	debugOnSerial("rest.");
+#endif
+
 	pinMode(sim_boot_pin, OUTPUT);
 
 	pinMode(interrupt_pin, INPUT_PULLUP);
 
-	digitalWrite(sim_boot_pin, LOW);
-
-	delay(1000);
+	turn_on();
 
 	PCMSK |= bit(PCINT2); // want pin D3 / pin 2
 
@@ -72,10 +73,6 @@ void setup()
 
 void loop()
 {
-	// debugOnSerial("Ciao mondo");
-	// delay(1000);
-	// return;
-
 	if ((millis() - start_timer) < 120000)
 	{
 		startSMSActivity();
@@ -88,9 +85,16 @@ void loop()
 			if (is_on_power_safe) {
 				turn_off();
 			}
+#ifdef _DEBUG
+			debugOnSerial("sleep");
+#endif
 			/*wd_isActive = false;*/
 			/*wdt_disable();*/
 			enter_sleep();
+
+#ifdef _DEBUG
+			debugOnSerial("weak");
+#endif
 
 			turn_off_timer = millis();
 
@@ -102,7 +106,13 @@ void loop()
 
 	if (is_on_interrupt && ((millis() - start_timer) > 120000))
 	{
-		tilt_sensor_activity();
+#ifdef _DEBUG
+		debugOnSerial("call");
+#endif
+
+		callPhoneNumber();
+
+		delay(5000);
 
 		/*if (is_on_interrupt != true)
 		{*/
@@ -177,15 +187,7 @@ void startSMSActivity()
 
 void tilt_sensor_activity()
 {
-#ifdef _DEBUG
-	debugOnSerial("intr");
-#endif
-
-	callPhoneNumber();
-
-	delay(5000);
-
-
+	
 }
 
 // void watchDogAndSleepActivity()
@@ -210,11 +212,10 @@ void tilt_sensor_activity()
 
 void debugOnSerial(char* stringa)
 {
-	if (!is_debug_writing_enable) return;
+	//if (!is_debug_writing_enable) return;
 	// use on pin 4 (A2) be careful to remove analog function.
-	SoftwareSerial mySerial(sim_module_rx_pin, sim_module_tx_pin, false);
+	SoftwareSerial mySerial(99, 4, false);
 	mySerial.begin(9600);
-	delay(3000);
 	mySerial.print(F("..."));
 	mySerial.println(stringa);
 }
