@@ -15,7 +15,7 @@ bool is_on_power_safe = false;
 //volatile uint8_t watchDogCounter = 0;
 //volatile bool isWatchDogEvent = false;
 // uint8_t voltagePin = A2;
-bool isCallDisabled = false;
+bool is_call_disabled = false;
 //uint8_t wd_timer = 2;
 //bool wd_isActive = false;
 
@@ -442,13 +442,13 @@ void getTaggedSmsFromResponse(char tag)
 
 	if (isSmsCodeFind(sms, DISABLE_CALLS))
 	{
-		isCallDisabled = true;
+		is_call_disabled = true;
 	}
 
 	if (isSmsCodeFind(sms, ENABLE_CALLS))
 	{
 
-		isCallDisabled = false;
+		is_call_disabled = false;
 
 		callPhoneNumber();
 
@@ -596,7 +596,7 @@ void enter_sleep()
 
 void callPhoneNumber()
 {
-	if (isCallDisabled)
+	if (is_call_disabled)
 		return;
 
 	char phoneNumber[11]{};
