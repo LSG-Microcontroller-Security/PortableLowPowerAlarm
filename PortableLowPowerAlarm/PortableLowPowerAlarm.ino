@@ -1,8 +1,7 @@
-#include <SoftwareSerial.h>
+#include "internal_libraries/SoftwareSerial.h"
 #include <avr/sleep.h>
 #include <avr/power.h>
 #include <avr/pgmspace.h>
-#include <avr/wdt.h>
 
 /// <summary>
 /// 8mhz speed clock is right
@@ -32,21 +31,26 @@ uint8_t debug_tx_pin = 4;
 #define DELETE_X_SMS_ELEMENT "AT+CMGD="
 #define READ_X_SMS_ELEMENT "AT+CMGR="
 
-//#define _DEBUG
+#define _DEBUG
 
 void setup()
 {
-	delay(5000);
-
-#ifdef _DEBUG
-	debugOnSerial("rest.");
-#endif
-
 	pinMode(sim_boot_pin, OUTPUT);
 
 	pinMode(interrupt_pin, INPUT_PULLUP);
 
-	turn_on();
+	turn_sim_on_off();
+
+//#ifdef _DEBUG
+//	//only use when recompile
+//	delay(60000);
+//#else
+//	delay(5000);
+//#endif
+
+#ifdef _DEBUG
+	debugOnSerial("rest.");
+#endif
 
 	PCMSK |= bit(PCINT2); // want pin D3 / pin 2
 
@@ -73,6 +77,11 @@ void setup()
 
 void loop()
 {
+#ifdef _DEBUG
+	debugOnSerial("go.");
+#endif
+
+
 	if ((millis() - start_timer) < 120000)
 	{
 		startSMSActivity();
@@ -83,7 +92,7 @@ void loop()
 		if (!is_on_interrupt)
 		{
 			if (is_on_power_safe) {
-				turn_off();
+				turn_sim_on_off();
 			}
 #ifdef _DEBUG
 			debugOnSerial("sleep");
@@ -99,7 +108,7 @@ void loop()
 			turn_off_timer = millis();
 
 			if (is_on_power_safe) {
-				turn_on();
+				turn_sim_on_off();
 			}
 		}
 	}
@@ -187,7 +196,7 @@ void startSMSActivity()
 
 void tilt_sensor_activity()
 {
-	
+
 }
 
 // void watchDogAndSleepActivity()
@@ -216,6 +225,7 @@ void debugOnSerial(char* stringa)
 	// use on pin 4 (A2) be careful to remove analog function.
 	SoftwareSerial mySerial(99, 4, false);
 	mySerial.begin(9600);
+	delay(500);
 	mySerial.print(F("..."));
 	mySerial.println(stringa);
 }
@@ -225,15 +235,24 @@ void activateSystemInterrupt()
 	is_on_interrupt = true;
 }
 
-void turn_on()
-{
-	digitalWrite(sim_boot_pin, HIGH);
-	delay(500);
-	digitalWrite(sim_boot_pin, LOW);
-	delay(20000);
-}
+//void turn_on()
+//{
+//	digitalWrite(sim_boot_pin, HIGH);
+//	delay(500);
+//	digitalWrite(sim_boot_pin, LOW);
+//	delay(5000);
+//}
 
-void turn_off()
+//void turn_off()
+//{
+//	digitalWrite(sim_boot_pin, HIGH);
+//	delay(500);
+//	digitalWrite(sim_boot_pin, LOW);
+//	delay(5000);
+//	digitalWrite(sim_boot_pin, HIGH);
+//}
+
+void turn_sim_on_off()
 {
 	digitalWrite(sim_boot_pin, HIGH);
 	delay(500);
@@ -241,6 +260,7 @@ void turn_off()
 	delay(5000);
 	digitalWrite(sim_boot_pin, HIGH);
 }
+
 
 // void checkBatteryVoltage()
 //{
