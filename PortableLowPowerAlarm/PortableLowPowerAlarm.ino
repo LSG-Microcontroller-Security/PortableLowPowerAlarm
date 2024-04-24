@@ -387,7 +387,7 @@ void getTaggedSmsFromResponse(char tag)
 
 	exctractSmsTagged(tag, sms);
 
-
+	debugOnSerial(sms);
 #ifdef _DEBUG
 	debugOnSerial(sms);
 #endif
@@ -700,10 +700,8 @@ void turn_sim800c_on()
 
 		if (mySerial.available() > 0)
 		{
-			if (mySerial.readString().indexOf(F("OK")) != -1)
-			{
+			if (mySerial.readString().indexOf(F("OK")) != -1){
 				check = true ;
-				
 			}
 		}
 		else {
@@ -711,7 +709,6 @@ void turn_sim800c_on()
 		
 		}
 	}
-	//return true;
 }
 
 void turn_sim800c_off()
