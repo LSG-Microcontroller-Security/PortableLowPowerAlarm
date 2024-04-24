@@ -113,13 +113,12 @@ void loop()
 		if (!is_on_interrupt)
 		{
 			if (is_on_power_safe) {
+
 				turn_sim800c_off();
 			}
 #ifdef _DEBUG
 			debugOnSerial("s");
 #endif
-			/*wd_isActive = false;*/
-			/*wdt_disable();*/
 			enter_sleep();
 
 #ifdef _DEBUG
@@ -152,7 +151,6 @@ void loop()
 
 		is_on_interrupt = false;
 
-		//startSMSActivity();
 		/*if (!wd_isActive)
 		{
 			setup_watchdog(9);
@@ -380,14 +378,12 @@ bool isSmsCodeFind(char* sms, char code[1])
 	return false;
 }
 
-void getTaggedSmsFromResponse(char tag)
-{
+void getTaggedSmsFromResponse(char tag){
 
 	char sms[12] = "";
 
 	exctractSmsTagged(tag, sms);
 
-	debugOnSerial(sms);
 #ifdef _DEBUG
 	debugOnSerial(sms);
 #endif
@@ -400,7 +396,9 @@ void getTaggedSmsFromResponse(char tag)
 	if (phone_c >= 48 && phone_c <= 57)
 	{
 		char charToWrite = ' ';
+
 		uint8_t cicle = 0;
+		
 		while (charToWrite != '\0' && cicle < 20)
 		{
 			charToWrite = sms[cicle];
@@ -559,28 +557,36 @@ void getTaggedSmsFromResponse(char tag)
 	//}
 }
 
-void enter_sleep()
-{
+void enter_sleep(){
+
 	byte adcsra;
+
 	cli();
+	
 	set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+	
 	adcsra = ADCSRA; // save the ADC Control and Status Register A
 	// mySerial.print("adcsra = "); mySerial.println(adcsra,HEX);
+	
 	ADCSRA = 0;			 // Turn off ADC
+	
 	power_all_disable(); // Power off ADC, Timer 0 and 1, serial interface
+	
 	sleep_enable();
+	
 	sei();
+	
 	sleep_cpu();
 	// zzz
 	// Wake up
 	sleep_disable();
 	//
 	power_all_enable(); // Power everything back on
+	
 	ADCSRA = adcsra;	// restore ADCSRA
 }
 
-void callPhoneNumber()
-{
+void callPhoneNumber(){
 	if (is_call_disabled)
 		return;
 
@@ -596,12 +602,10 @@ void callPhoneNumber()
 	callPhoneNumber(phoneNumber);
 }
 
-void callPhoneNumber(char* phoneNumber)
-{
+void callPhoneNumber(char* phoneNumber){
 #ifdef _DEBUG
 	debugOnSerial("call.");
 #endif
-
 	SoftwareSerial mySerial(sim_module_rx_pin, sim_module_tx_pin, false);
 
 	mySerial.begin(19200);
@@ -613,12 +617,19 @@ void callPhoneNumber(char* phoneNumber)
 	// delay(100);
 	// globalString = F("atd");
 	strcat(command, ATD);
+
 	strcat(command, phoneNumber);
+	
 	strcat(command, ";");
+	
 	strcat(command, "\0");
+	
 	mySerial.println(F("AT"));
+	
 	delay(1000);
+	
 	mySerial.println(command);
+	
 	delay(10000);
 	/*mySerial.println(F("AT"));
 	delay(1000);
@@ -659,15 +670,13 @@ void callPhoneNumber(char* phoneNumber)
 //	}
 //}
 
-int freeRam()
-{
+int freeRam(){
 	extern int __heap_start, * __brkval;
 	int v;
 	return (int)&v - (__brkval == 0 ? (int)&__heap_start : (int)__brkval);
 }
 
-void debugOnSerial(char* stringa)
-{
+void debugOnSerial(char* stringa){
 	//if (!is_debug_writing_enable) return;
 	// use on pin 4 (A2) be careful to remove analog function.
 	SoftwareSerial mySerial(99, 4, false);
@@ -701,52 +710,18 @@ void turn_sim800c_on()
 		if (mySerial.available() > 0)
 		{
 			if (mySerial.readString().indexOf(F("OK")) != -1){
+				
 				check = true ;
 			}
 		}
 		else {
 			switch_sim();
-		
 		}
 	}
 }
 
-void turn_sim800c_off()
-{
+void turn_sim800c_off(){
 	switch_sim();
-
-	//SoftwareSerial mySerial(sim_module_rx_pin, sim_module_tx_pin, false);
-
-	//mySerial.begin(19200);
-
-	//delay(3000);
-
-	//bool check = false;
-
-	//while (!check) {
-
-	//	while (mySerial.available() > 0)
-	//	{
-	//		mySerial.read();
-	//	}
-
-	//	mySerial.println("AT");
-
-	//	delay(5000);
-
-	//	if (mySerial.available() > 0)
-	//	{
-	//	/*	if (mySerial.readString().indexOf("OK") != -1)
-	//		{*/
-	//			switch_sim();
-	//		//}
-	//	}
-	//	else {
-	//		check = true;
-	//	}
-	//	
-	//}
-	//return true;
 }
 
 
