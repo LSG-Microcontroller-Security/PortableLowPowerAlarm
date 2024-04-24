@@ -31,7 +31,7 @@ uint8_t debug_tx_pin = 4;
 #define DELETE_X_SMS_ELEMENT "AT+CMGD="
 #define READ_X_SMS_ELEMENT "AT+CMGR="
 
-#define _DEBUG
+//#define _DEBUG
 
 void setup()
 {
@@ -39,18 +39,23 @@ void setup()
 
 	pinMode(interrupt_pin, INPUT_PULLUP);
 
-	turn_sim_on_off();
-
-//#ifdef _DEBUG
-//	//only use when recompile
-//	delay(60000);
-//#else
-//	delay(5000);
-//#endif
+	//#ifdef _DEBUG
+	//	//only use when recompile
+	//	delay(60000);
+	//#else
+	//	delay(5000);
+	//#endif
 
 #ifdef _DEBUG
-	debugOnSerial("rest.");
+	delay(5000);
+	debugOnSerial("r");
 #endif
+
+	turn_sim800c_on();
+
+	delay(10000); //Forse inutie..............
+
+	//debugOnSerial("1");
 
 	PCMSK |= bit(PCINT2); // want pin D3 / pin 2
 
@@ -71,53 +76,71 @@ void setup()
 	//setup_watchdog(9);
 
 	delay(1000);
-
-	// detachInterrupt(0);
 }
 
 void loop()
 {
-#ifdef _DEBUG
-	debugOnSerial("go.");
-#endif
+//#ifdef _DEBUG
+//	debugOnSerial("off.");
+//#endif
+//
+//	turn_sim800c_off();
+//
+//	delay(10000);
+//
+//#ifdef _DEBUG
+//	debugOnSerial("on.");
+//#endif
+//
+//	turn_sim800c_on();
+//
+//	delay(10000);
+//
+//	return;
+//#ifdef _DEBUG
+//	debugOnSerial("go.");
+//#endif
 
-
-	if ((millis() - start_timer) < 120000)
+	/*if ((millis() - start_timer) < 120000)
 	{
 		startSMSActivity();
-	}
+	}*/
+
+	startSMSActivity();
 
 	if ((millis() - turn_off_timer) > 120000)
 	{
 		if (!is_on_interrupt)
 		{
 			if (is_on_power_safe) {
-				turn_sim_on_off();
+				turn_sim800c_off();
 			}
 #ifdef _DEBUG
-			debugOnSerial("sleep");
+			debugOnSerial("s");
 #endif
 			/*wd_isActive = false;*/
 			/*wdt_disable();*/
 			enter_sleep();
 
 #ifdef _DEBUG
-			debugOnSerial("weak");
+			debugOnSerial("w");
 #endif
 
 			turn_off_timer = millis();
 
 			if (is_on_power_safe) {
-				turn_sim_on_off();
+				turn_sim800c_on();
+				delay(10000);//Forse inutie..............
+				set_sms_receiver();
 			}
 		}
 	}
 
 	if (is_on_interrupt && ((millis() - start_timer) > 120000))
 	{
-#ifdef _DEBUG
-		debugOnSerial("call");
-#endif
+//#ifdef _DEBUG
+//		debugOnSerial("call");
+//#endif
 
 		callPhoneNumber();
 
@@ -128,6 +151,8 @@ void loop()
 		turn_off_timer = millis();
 
 		is_on_interrupt = false;
+
+		//startSMSActivity();
 		/*if (!wd_isActive)
 		{
 			setup_watchdog(9);
@@ -194,10 +219,6 @@ void startSMSActivity()
 	getTaggedSmsFromResponse('#');
 }
 
-void tilt_sensor_activity()
-{
-
-}
 
 // void watchDogAndSleepActivity()
 //{
@@ -219,40 +240,14 @@ void tilt_sensor_activity()
 //	delay(100);
 // }
 
-void debugOnSerial(char* stringa)
-{
-	//if (!is_debug_writing_enable) return;
-	// use on pin 4 (A2) be careful to remove analog function.
-	SoftwareSerial mySerial(99, 4, false);
-	mySerial.begin(9600);
-	delay(500);
-	mySerial.print(F("..."));
-	mySerial.println(stringa);
-}
+
 
 void activateSystemInterrupt()
 {
 	is_on_interrupt = true;
 }
 
-//void turn_on()
-//{
-//	digitalWrite(sim_boot_pin, HIGH);
-//	delay(500);
-//	digitalWrite(sim_boot_pin, LOW);
-//	delay(5000);
-//}
-
-//void turn_off()
-//{
-//	digitalWrite(sim_boot_pin, HIGH);
-//	delay(500);
-//	digitalWrite(sim_boot_pin, LOW);
-//	delay(5000);
-//	digitalWrite(sim_boot_pin, HIGH);
-//}
-
-void turn_sim_on_off()
+void switch_sim()
 {
 	digitalWrite(sim_boot_pin, HIGH);
 	delay(500);
@@ -260,38 +255,6 @@ void turn_sim_on_off()
 	delay(5000);
 	digitalWrite(sim_boot_pin, HIGH);
 }
-
-
-// void checkBatteryVoltage()
-//{
-//	float measure = 0;
-//
-//	for (int i = 0; i < 50; i++)
-//	{
-//		measure = measure + ((5.10f / 1024.00f) * analogRead(voltagePin));
-//	}
-//
-//	measure = measure / 50;
-//
-//	if (measure < 3.35f)
-//	{
-//		if (digitalRead(transistorPin) != HIGH)
-//		{
-//			turnOn();
-//			delay(20000);
-//		}
-//
-//		for (int i = 0; i < 5; i++)
-//		{
-//			callPhoneNumber();
-//		}
-//
-//		delay(15000);
-//
-//		turnOff();
-//	}
-//	isWatchDogEvent = false;
-// }
 
 bool exctractSmsTagged(char tag, char* sms)
 {
@@ -423,6 +386,7 @@ void getTaggedSmsFromResponse(char tag)
 	char sms[12] = "";
 
 	exctractSmsTagged(tag, sms);
+
 
 #ifdef _DEBUG
 	debugOnSerial(sms);
@@ -634,6 +598,10 @@ void callPhoneNumber()
 
 void callPhoneNumber(char* phoneNumber)
 {
+#ifdef _DEBUG
+	debugOnSerial("call.");
+#endif
+
 	SoftwareSerial mySerial(sim_module_rx_pin, sim_module_tx_pin, false);
 
 	mySerial.begin(19200);
@@ -696,6 +664,92 @@ int freeRam()
 	extern int __heap_start, * __brkval;
 	int v;
 	return (int)&v - (__brkval == 0 ? (int)&__heap_start : (int)__brkval);
+}
+
+void debugOnSerial(char* stringa)
+{
+	//if (!is_debug_writing_enable) return;
+	// use on pin 4 (A2) be careful to remove analog function.
+	SoftwareSerial mySerial(99, 4, false);
+	mySerial.begin(9600);
+	delay(500);
+	mySerial.print(F("..."));
+	mySerial.println(stringa);
+}
+
+void turn_sim800c_on()
+{
+	SoftwareSerial mySerial(sim_module_rx_pin, sim_module_tx_pin, false);
+
+	mySerial.begin(19200);
+
+	delay(3000);
+
+	bool check = false;
+
+	while (!check) {
+
+		while (mySerial.available() > 0)
+		{
+			mySerial.read();
+		}
+
+		mySerial.println(F("AT"));
+
+		delay(5000);
+
+		if (mySerial.available() > 0)
+		{
+			if (mySerial.readString().indexOf(F("OK")) != -1)
+			{
+				check = true ;
+				
+			}
+		}
+		else {
+			switch_sim();
+		
+		}
+	}
+	//return true;
+}
+
+void turn_sim800c_off()
+{
+	switch_sim();
+
+	//SoftwareSerial mySerial(sim_module_rx_pin, sim_module_tx_pin, false);
+
+	//mySerial.begin(19200);
+
+	//delay(3000);
+
+	//bool check = false;
+
+	//while (!check) {
+
+	//	while (mySerial.available() > 0)
+	//	{
+	//		mySerial.read();
+	//	}
+
+	//	mySerial.println("AT");
+
+	//	delay(5000);
+
+	//	if (mySerial.available() > 0)
+	//	{
+	//	/*	if (mySerial.readString().indexOf("OK") != -1)
+	//		{*/
+	//			switch_sim();
+	//		//}
+	//	}
+	//	else {
+	//		check = true;
+	//	}
+	//	
+	//}
+	//return true;
 }
 
 
