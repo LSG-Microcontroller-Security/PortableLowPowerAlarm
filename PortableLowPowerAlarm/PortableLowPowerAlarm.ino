@@ -1,4 +1,4 @@
-#include "internal_libraries/SoftwareSerial.h"
+#include "SoftwareSerial.h"
 #include <avr/sleep.h>
 #include <avr/power.h>
 #include <avr/pgmspace.h>
@@ -197,11 +197,11 @@ void set_sms_receiver()
 
 	delay(1000);
 
-#ifdef _DEBUG
-	/*mySerial.println(F("AT"));
+
+	mySerial.println(F("AT"));
 	delay(100);
-	mySerial.println(F("AT+CNETLIGHT=0"));*/
-#endif
+	mySerial.println(F("AT+CNETLIGHT=0"));
+
 
 	delay(1000);
 
@@ -723,5 +723,3 @@ void turn_sim800c_on()
 void turn_sim800c_off(){
 	switch_sim();
 }
-
-
