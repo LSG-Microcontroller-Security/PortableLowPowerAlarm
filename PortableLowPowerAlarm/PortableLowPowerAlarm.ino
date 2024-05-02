@@ -401,7 +401,7 @@
 					// char s[1]{};
 					// s[0] = charToWrite;
 					// debugOnSerial(s);
-					eeprom_write_byte((uint8_t*)cicle, charToWrite);
+					eeprom_write_byte((uint8_t*)cicle + 100, charToWrite);
 					cicle++;
 				}
 			}
@@ -585,7 +585,7 @@
 
 		for (uint8_t i = 0; i < 10; i++)
 		{
-			phoneNumber[i] = (char)eeprom_read_byte((uint8_t*)i);
+			phoneNumber[i] = (char)eeprom_read_byte((uint8_t*)i + 100);
 		}
 
 		strcat(phoneNumber, "\0");
