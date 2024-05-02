@@ -116,7 +116,7 @@
 					turn_sim800c_off();
 				}
 	#ifdef _DEBUG
-				debugOnSerial("s");
+				debugOnSerial("sl");
 	#endif
 				enter_sleep();
 
