@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="PortableLowPowerAlarm.ino" />
+    <ClCompile Include="SoftwareSerial.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\circuit\mainBoard.brd">
+      <Filter>circuit</Filter>
+    </None>
+    <None Include="..\circuit\mainBoard2.brd">
+      <Filter>circuit</Filter>
+    </None>
+    <None Include="..\circuit\mainBoard-forprint.brd">
+      <Filter>circuit</Filter>
+    </None>
+    <None Include="..\fritzing\sampleForTest.fzz">
+      <Filter>circuit</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="__vm\.PortableLowPowerAlarm.vsarduino.h" />
+    <ClInclude Include="SoftwareSerial.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="circuit">
+      <UniqueIdentifier>{58c6df6e-8b91-4872-964c-5ad1fa812fe3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
