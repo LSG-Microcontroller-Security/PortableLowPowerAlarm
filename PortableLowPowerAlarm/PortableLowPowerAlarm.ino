@@ -95,8 +95,6 @@ void loop()
 
 		callPhoneNumber();
 
-	
-
 
 	//if ((millis() - start_timer) < 30000)
 	//{
@@ -177,7 +175,6 @@ void enters_sleep()
 }
 void external_interrupt()
 {
-	DDRB |= (1 << PB1);     // set PB1 as output(LED)
 	sei();                //enabling global interrupt
 	GIMSK |= (1 << PCIE);    //Pin change interrupt enable
 	PCMSK |= (1 << PCINT2);   //Pin change interrupt to 2nd pin PB2
