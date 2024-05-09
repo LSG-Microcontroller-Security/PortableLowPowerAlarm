@@ -2,6 +2,8 @@
 #include <avr/sleep.h>
 #include <avr/power.h>
 #include <avr/pgmspace.h>
+#include<avr/io.h>
+#include<avr/interrupt.h>
 
 /// <summary>
 /// 8mhz speed clock is right
@@ -10,7 +12,7 @@
 unsigned long start_timer = 0;
 unsigned long turn_off_timer = 0;
 volatile bool is_on_interrupt = false;
-bool is_on_power_safe = false;
+bool is_on_power_safe = true;
 // volatile uint8_t watchDogCounter = 0;
 // volatile bool isWatchDogEvent = false;
 //  uint8_t voltagePin = A2;
@@ -31,6 +33,8 @@ uint8_t debug_tx_pin = 4;
 #define DELETE_X_SMS_ELEMENT "AT+CMGD="
 #define READ_X_SMS_ELEMENT "AT+CMGR="
 
+
+
 // #define _DEBUG
 
 void setup()
@@ -39,131 +43,120 @@ void setup()
 
 	pinMode(interrupt_pin, INPUT_PULLUP);
 
-	// #ifdef _DEBUG
-	//	//only use when recompile
-	//	delay(60000);
-	// #else
-	//	delay(5000);
-	// #endif
+	//digitalWrite(sim_boot_pin, LOW);
 
-#ifdef _DEBUG
-	delay(5000);
-	debugOnSerial("r");
-#endif
-
-	turn_sim800c_on();
-
-	// delay(10000); //Forse inutie..............
-
-	// debugOnSerial("1");
-
-	PCMSK |= bit(PCINT2); // want pin D3 / pin 2
-
-	GIFR |= bit(PCIF); // clear any outstanding interrupts
-
-	GIMSK |= bit(PCIE); // enable pin change interrupts
+	delay(15000);
 
 	set_sms_receiver();
 
 	callPhoneNumber();
 
-	start_timer = millis();
+	while (millis() < (180UL * 1000UL))
+	{
+		startSMSActivity();
+	}
 
-	turn_off_timer = millis();
+#ifdef _DEBUG
+	delay(5000);
+	debugOnSerial("r");
+#endif
+	external_interrupt();
 
-	attachInterrupt(0, activateSystemInterrupt, FALLING);
-
-	// setup_watchdog(9);
-
-	delay(1000);
 }
 
+/// <summary>
+/// https://www.gadgetronicx.com/attiny85-sleep-modes-tutorial/
+/// https://www.avrfreaks.net/s/topic/a5C3l000000UQxAEAW/t117402
+/// </summary>
+/// 
+
+byte adcsra = ADCSRA;
 void loop()
 {
-	// #ifdef _DEBUG
-	//	debugOnSerial("off.");
-	// #endif
-	//
-	//	turn_sim800c_off();
-	//
-	//	delay(10000);
-	//
-	// #ifdef _DEBUG
-	//	debugOnSerial("on.");
-	// #endif
-	//
-	//	turn_sim800c_on();
-	//
-	//	delay(10000);
-	//
-	//	return;
-	// #ifdef _DEBUG
-	//	debugOnSerial("go.");
-	// #endif
+		turn_sim800c_off();
 
-	if ((millis() - start_timer) < 120000)
-	{
-		detachInterrupt(0);
-		startSMSActivity();
-		attachInterrupt(0, activateSystemInterrupt, FALLING);
-	}
+		adcsra = ADCSRA; // save the ADC Control and Status Register A
+
+		// mySerial.print("adcsra = "); mySerial.println(adcsra,HEX);
+
+		ADCSRA = 0;			 // Turn off ADC
+
+		power_all_disable(); // Power off ADC, Timer 0 and 1, serial interface
+
+		enters_sleep();
+
+		MCUCR &= ~(1 << SE);
+
+		power_all_enable(); // Power everything back on
+
+		ADCSRA = adcsra;	// restore ADCSRA
+
+		turn_sim800c_on();
+
+		callPhoneNumber();
+
+	
+
+
+	//if ((millis() - start_timer) < 30000)
+	//{
+	//	//startSMSActivity();
+	//}
 
 	// Go to sleep
-	if ((millis() - turn_off_timer) > 120000)
-	{
-		if (!is_on_interrupt)
-		{
-			if (is_on_power_safe)
-			{
-				turn_sim800c_off();
-			}
-#ifdef _DEBUG
-			debugOnSerial("sl");
-#endif
-			enter_sleep();
+//	if ((millis() - turn_off_timer) > 30000)
+//	{
+//		/*if (!is_on_interrupt)
+//		{*/
+//			if (is_on_power_safe)
+//			{
+//				turn_sim800c_off();
+//			}
+//#ifdef _DEBUG
+//			debugOnSerial("sl");
+//#endif
+//			//enter_sleep();
+//
+//#ifdef _DEBUG
+//			debugOnSerial("w");
+//#endif
+//			// after wakeup
+//			
+//
+//			if (is_on_power_safe)
+//			{
+//				turn_sim800c_on();
+//				
+//				// set_sms_receiver();
+//				// is_on_interrupt = false;
+//				// attachInterrupt(0, activateSystemInterrupt, FALLING);
+//			}
+//			turn_off_timer = millis();
+//		//}
+//	}
 
-#ifdef _DEBUG
-			debugOnSerial("w");
-#endif
-			// after wakeup
-			detachInterrupt(0);
+	//if (((millis() - start_timer) > 120000))
+	//{
+	//	// #ifdef _DEBUG
+	//	//		debugOnSerial("call");
+	//	// #endif
+	//	
+	//	callPhoneNumber();
 
-			if (is_on_power_safe)
-			{
-				turn_sim800c_on();
-				// callPhoneNumber();
-				// delay(10000);//Forse inutie..............
-				// set_sms_receiver();
-				// is_on_interrupt = false;
-				// attachInterrupt(0, activateSystemInterrupt, FALLING);
-			}
-			turn_off_timer = millis();
-		}
-	}
+	//	delay(10000);
 
-	if (is_on_interrupt && ((millis() - start_timer) > 120000))
-	{
-		// #ifdef _DEBUG
-		//		debugOnSerial("call");
-		// #endif
-		detachInterrupt(0);
-		callPhoneNumber();
-		attachInterrupt(0, activateSystemInterrupt, FALLING);
+	//	/*if (is_on_interrupt != true)
+	//	{*/
+	//	turn_off_timer = millis();
 
-		delay(5000);
+	//	is_on_interrupt = false;
 
-		/*if (is_on_interrupt != true)
-		{*/
-		turn_off_timer = millis();
-
-		is_on_interrupt = false;
-
-		/*if (!wd_isActive)
-		{
-			setup_watchdog(9);
-			wd_isActive = true;
-		}*/
-	}
+	//	/*if (!wd_isActive)
+	//	{
+	//		setup_watchdog(9);
+	//		wd_isActive = true;
+	//	}*/
+	//}
 
 	// WatchDog Sleep Activity
 	// if (isWatchDogEvent && !is_on_power_safe && ((millis() - start_timer) > 120000))
@@ -173,6 +166,21 @@ void loop()
 	//	startSMSActivity();
 	//	isWatchDogEvent = false;
 	//}
+}
+
+void enters_sleep()
+{
+	MCUCR |= (1 << SM1);      // enabling sleep mode and powerdown sleep mode
+	MCUCR |= (1 << SE);     //Enabling sleep enable bit
+	__asm__ __volatile__("sleep" "\n\t" ::); //Sleep instruction to put controller to sleep
+	//controller stops executing instruction after entering sleep mode  
+}
+void external_interrupt()
+{
+	DDRB |= (1 << PB1);     // set PB1 as output(LED)
+	sei();                //enabling global interrupt
+	GIMSK |= (1 << PCIE);    //Pin change interrupt enable
+	PCMSK |= (1 << PCINT2);   //Pin change interrupt to 2nd pin PB2
 }
 
 void set_sms_receiver()
@@ -250,10 +258,9 @@ void activateSystemInterrupt()
 void switch_sim()
 {
 	digitalWrite(sim_boot_pin, HIGH);
-	delay(500);
-	digitalWrite(sim_boot_pin, LOW);
 	delay(5000);
-	digitalWrite(sim_boot_pin, HIGH);
+	digitalWrite(sim_boot_pin, LOW);
+	delay(10000);
 }
 
 bool exctractSmsTagged(char tag, char *sms)
@@ -559,31 +566,42 @@ void getTaggedSmsFromResponse(char tag)
 void enter_sleep()
 {
 
-	byte adcsra;
+	//byte adcsra;
 
 	cli();
 
+	GIMSK &= ~(1 << PCIE);
+	delay(100);
+
 	set_sleep_mode(SLEEP_MODE_PWR_DOWN);
 
-	adcsra = ADCSRA; // save the ADC Control and Status Register A
+	//adcsra = ADCSRA; // save the ADC Control and Status Register A
 	// mySerial.print("adcsra = "); mySerial.println(adcsra,HEX);
 
-	ADCSRA = 0; // Turn off ADC
+	//ADCSRA = 0; // Turn off ADC
 
-	power_all_disable(); // Power off ADC, Timer 0 and 1, serial interface
+	//power_all_disable(); // Power off ADC, Timer 0 and 1, serial interface
 
 	sleep_enable();
 
 	sei();
+	GIFR |= bit(PCIF); // clear any outstanding interrupts
+	GIMSK |= bit(PCIE); // enable pin change interrupts
+	delay(100);
 
 	sleep_cpu();
 	// zzz
 	// Wake up
+	cli();
+	GIMSK &= ~(1 << PCIE);
+	delay(100);
+
 	sleep_disable();
 	//
-	power_all_enable(); // Power everything back on
+	//power_all_enable(); // Power everything back on
 
-	ADCSRA = adcsra; // restore ADCSRA
+	//ADCSRA = adcsra; // restore ADCSRA
+
 }
 
 void callPhoneNumber()
@@ -692,6 +710,14 @@ void debugOnSerial(char *stringa)
 
 void turn_sim800c_on()
 {
+
+	digitalWrite(sim_boot_pin, HIGH);
+	delay(5000);
+	digitalWrite(sim_boot_pin, LOW);
+	delay(10000);
+
+	return;
+
 	SoftwareSerial mySerial(sim_module_rx_pin, sim_module_tx_pin, false);
 
 	mySerial.begin(19200);
@@ -716,7 +742,6 @@ void turn_sim800c_on()
 		{
 			if (mySerial.readString().indexOf(F("OK")) != -1)
 			{
-
 				check = true;
 			}
 		}
@@ -762,4 +787,5 @@ void turn_sim800c_off()
 			delay(5000);
 		}
 	}
+	digitalWrite(sim_boot_pin, HIGH);
 }
