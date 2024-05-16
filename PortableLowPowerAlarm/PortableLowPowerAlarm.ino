@@ -714,7 +714,7 @@ void turn_sim800c_off()
 
 			while (mySerial.available() > 0)
 			{
-				mySerial.readString();
+				mySerial.read();
 			}
 			mySerial.flush();
 
