@@ -3,7 +3,7 @@
     "configurations": [
         {
             "name": "Arduino",
-            "compilerPath": "~/.arduino15/packages/arduino/tools/avr-gcc/7.3.0-atmel3.6.1-arduino7/bin/avr-g++",
+            "compilerPath": "/home/luigi/.arduino15/packages/arduino/tools/avr-gcc/7.3.0-atmel3.6.1-arduino7/bin/avr-g++",
             "compilerArgs": [
                 "-w",
                 "-std=gnu++11",
@@ -16,24 +16,21 @@
             ],
             "intelliSenseMode": "gcc-x64",
             "includePath": [
-                "~/.arduino15/packages/arduino/hardware/avr/1.8.6/libraries/**",
-                "~/.arduino15/packages/arduino/hardware/avr/1.8.6/cores/arduino",
-                "~/.arduino15/packages/arduino/hardware/avr/1.8.6/variants/eightanaloginputs",
-                "~/.arduino15/packages/arduino/tools/avr-gcc/7.3.0-atmel3.6.1-arduino7/lib/gcc/avr/7.3.0/include",
-                "~/.arduino15/packages/arduino/tools/avr-gcc/7.3.0-atmel3.6.1-arduino7/lib/gcc/avr/7.3.0/include-fixed",
-                "~/.arduino15/packages/arduino/tools/avr-gcc/7.3.0-atmel3.6.1-arduino7/avr/include",
-                "~/Repo/MicroControllerTeamProject/libraries/ActivityFramework/**",
-                "~/Repo/MicroControllerTeamProject/libraries/**"
+                "/home/luigi/.arduino15/packages/arduino/hardware/avr/1.8.6/cores/arduino",
+                "/home/luigi/.arduino15/packages/attiny/hardware/avr/1.0.2/variants/tiny8",
+                "/home/luigi/.arduino15/packages/arduino/tools/avr-gcc/7.3.0-atmel3.6.1-arduino7/lib/gcc/avr/7.3.0/include",
+                "/home/luigi/.arduino15/packages/arduino/tools/avr-gcc/7.3.0-atmel3.6.1-arduino7/lib/gcc/avr/7.3.0/include-fixed",
+                "/home/luigi/.arduino15/packages/arduino/tools/avr-gcc/7.3.0-atmel3.6.1-arduino7/avr/include"
             ],
             "forcedInclude": [
-                "~/.arduino15/packages/arduino/hardware/avr/1.8.6/cores/arduino/Arduino.h"
+                "/home/luigi/.arduino15/packages/arduino/hardware/avr/1.8.6/cores/arduino/Arduino.h"
             ],
             "cStandard": "c11",
             "cppStandard": "c++11",
             "defines": [
-                "F_CPU=16000000L",
+                "F_CPU=8000000L",
                 "ARDUINO=10607",
-                "ARDUINO_AVR_NANO",
+                "ARDUINO_attiny",
                 "ARDUINO_ARCH_AVR",
                 "__DBL_MIN_EXP__=(-125)",
                 "__HQ_FBIT__=15",

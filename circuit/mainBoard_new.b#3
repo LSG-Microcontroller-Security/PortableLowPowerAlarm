@@ -15,7 +15,7 @@
 <layer number="18" name="Vias" color="2" fill="1" visible="yes" active="yes"/>
 <layer number="19" name="Unrouted" color="6" fill="1" visible="no" active="yes"/>
 <layer number="20" name="Dimension" color="15" fill="1" visible="yes" active="yes"/>
-<layer number="21" name="tPlace" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="21" name="tPlace" color="7" fill="1" visible="no" active="yes"/>
 <layer number="22" name="bPlace" color="7" fill="1" visible="no" active="yes"/>
 <layer number="23" name="tOrigins" color="15" fill="1" visible="no" active="yes"/>
 <layer number="24" name="bOrigins" color="15" fill="1" visible="no" active="yes"/>
@@ -172,6 +172,8 @@
 <rectangle x1="44.203671875" y1="69.122084375" x2="47.232615625" y2="71.254021875" layer="16"/>
 <rectangle x1="41.742653125" y1="58.225525" x2="44.44030625" y2="59.173053125" layer="16"/>
 <rectangle x1="64.8856875" y1="66.80064375" x2="65.358959375" y2="81.818946875" layer="16"/>
+<rectangle x1="24.53445625" y1="50.39690625" x2="35.133340625" y2="91.95225" layer="16"/>
+<rectangle x1="26.399075" y1="39.983509375" x2="68.990890625" y2="53.147615625" layer="16"/>
 </plain>
 <libraries>
 <library name="con-lstb">
