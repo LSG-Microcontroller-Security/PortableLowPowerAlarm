@@ -94,6 +94,21 @@ volatile bool watchdog_wake_state = false;
 bool sim800c_sleep_state = false;
 bool sleep_mode_enabled = true;
 uint8_t watchdog_poll_elapsed_ticks = 0U;
+#if defined(ADCSRA)
+uint8_t adcsra_before_power_down_sleep = 0U;
+#endif
+#if defined(ACSR)
+uint8_t acsr_before_power_down_sleep = 0U;
+#endif
+#if defined(PRR)
+uint8_t prr_before_power_down_sleep = 0U;
+#endif
+#if defined(PRR0)
+uint8_t prr0_before_power_down_sleep = 0U;
+#endif
+#if defined(PRR1)
+uint8_t prr1_before_power_down_sleep = 0U;
+#endif
 
 #if APP_DEBUG_SERIAL_ENABLED
 #define DEBUG_SERIAL_RX_PIN PB2
@@ -215,13 +230,82 @@ void configure_watchdog_8s_interrupt() {
 void disable_watchdog() {
 	wdt_disable();
 }
+void disable_adc_for_low_power() {
+#if defined(ADCSRA) && defined(ADEN)
+	ADCSRA &= static_cast<uint8_t>(~_BV(ADEN));
+#endif
+}
+void prepare_mcu_for_power_down_sleep() {
+#if defined(ADCSRA)
+	adcsra_before_power_down_sleep = ADCSRA;
+#endif
+	disable_adc_for_low_power();
+
+#if defined(ACSR)
+	acsr_before_power_down_sleep = ACSR;
+#if defined(ACD)
+	ACSR |= _BV(ACD);
+#endif
+#endif
+
+#if defined(PRR)
+	prr_before_power_down_sleep = PRR;
+#endif
+#if defined(PRR0)
+	prr0_before_power_down_sleep = PRR0;
+#endif
+#if defined(PRR1)
+	prr1_before_power_down_sleep = PRR1;
+#endif
+
+#if defined(power_all_disable)
+	power_all_disable();
+#else
+#if defined(PRR)
+	PRR = static_cast<uint8_t>(0xFFU);
+#endif
+#if defined(PRR0)
+	PRR0 = static_cast<uint8_t>(0xFFU);
+#endif
+#if defined(PRR1)
+	PRR1 = static_cast<uint8_t>(0xFFU);
+#endif
+#endif
+}
+void restore_mcu_after_power_down_sleep() {
+#if defined(PRR)
+	PRR = prr_before_power_down_sleep;
+#endif
+#if defined(PRR0)
+	PRR0 = prr0_before_power_down_sleep;
+#endif
+#if defined(PRR1)
+	PRR1 = prr1_before_power_down_sleep;
+#endif
+
+#if defined(ACSR)
+	ACSR = acsr_before_power_down_sleep;
+#endif
+#if defined(ADCSRA)
+	ADCSRA = adcsra_before_power_down_sleep;
+#endif
+}
 void enter_deep_sleep() {
 	configure_watchdog_8s_interrupt();
+	prepare_mcu_for_power_down_sleep();
 	set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+
+	cli();
 	sleep_enable();
+#if defined(BODS) && defined(BODSE)
+	sleep_bod_disable();
+#endif
+	sei();
 	sleep_cpu();
+
 	sleep_disable();
 	disable_watchdog();
+	restore_mcu_after_power_down_sleep();
 }
 void clear_receive_buffer() {
 	while (sim_serial.available() > 0) {
@@ -602,6 +686,7 @@ bool setup_sms_receiver() {
 void setup() {
 	pinMode(SIM_SLEEP_PIN, OUTPUT);
 	digitalWrite(SIM_SLEEP_PIN, LOW);
+	disable_adc_for_low_power();
 
 	sim_serial.begin(SIM_SERIAL_BAUD_RATE);
 #if APP_DEBUG_SERIAL_ENABLED
