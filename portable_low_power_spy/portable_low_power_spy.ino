@@ -13,7 +13,16 @@
 #define SIM_SERIAL_BAUD_RATE 9600UL
 #define SIM_SERIAL_INVERSE_LOGIC false
 
-#define APP_DEBUG_SERIAL_ENABLED 1U
+// ==================== Debug Zone ====================
+// Set to 1U or 0U for quick enable/disable.
+#define APP_DEBUG_SERIAL_ENABLED 0U
+#define APP_DEBUG_ERROR_ENABLED 0U
+#define APP_DEBUG_SLEEP_TRACE_ENABLED 0U
+#define APP_DEBUG_CMD_TRACE_ENABLED 0U
+#define APP_DEBUG_CALL_TRACE_ENABLED 0U
+#define APP_DEBUG_SMS_TRACE_ENABLED 0U
+#define APP_DEBUG_BOOT_TRACE_ENABLED 0U
+// ===================================================
 
 #define SIM_BOOT_DELAY_MS 3000U
 
@@ -51,8 +60,10 @@
 #define SIM_SLEEP_ENTER_PRE_DELAY_MS 5000U
 #define SIM_SLEEP_EXIT_PRE_DELAY_MS 200U
 #define SIM_SLEEP_CMD_TIMEOUT_MS 3000UL
-#define SIM_CALL_START_TIMEOUT_MS 5000UL
+#define SIM_CALL_START_TIMEOUT_MS 20000UL
 #define SIM_CALL_POST_DIAL_DELAY_MS 1500U
+#define SIM_CALL_RETRY_DELAY_MS 1200U
+#define SIM_CALL_MAX_ATTEMPTS 3U
 #define SIM_POST_WAKE_SETTLE_MS 700U
 #define SIM_SMS_RESPONSE_BUFFER_SIZE 32U
 #define SIM_SMS_MESSAGE_BUFFER_SIZE 12U
@@ -97,11 +108,44 @@ void debug_print_fail(const __FlashStringHelper* fail_code) {
 	debug_serial.write(DEBUG_CHAR_LINE_FEED);
 }
 
-#define DEBUG_FAIL(text_literal) debug_print_fail(F(text_literal))
-#define DEBUG_LOG(text_literal) debug_print_fail(F(text_literal))
+#define DEBUG_PRINT(text_literal) debug_print_fail(F(text_literal))
+#if APP_DEBUG_ERROR_ENABLED
+#define DEBUG_ERROR(text_literal) DEBUG_PRINT(text_literal)
 #else
-#define DEBUG_FAIL(...) ((void)0)
-#define DEBUG_LOG(...) ((void)0)
+#define DEBUG_ERROR(...) ((void)0)
+#endif
+#if APP_DEBUG_SLEEP_TRACE_ENABLED
+#define DEBUG_SLEEP(text_literal) DEBUG_PRINT(text_literal)
+#else
+#define DEBUG_SLEEP(...) ((void)0)
+#endif
+#if APP_DEBUG_CMD_TRACE_ENABLED
+#define DEBUG_CMD(text_literal) DEBUG_PRINT(text_literal)
+#else
+#define DEBUG_CMD(...) ((void)0)
+#endif
+#if APP_DEBUG_CALL_TRACE_ENABLED
+#define DEBUG_CALL(text_literal) DEBUG_PRINT(text_literal)
+#else
+#define DEBUG_CALL(...) ((void)0)
+#endif
+#if APP_DEBUG_SMS_TRACE_ENABLED
+#define DEBUG_SMS(text_literal) DEBUG_PRINT(text_literal)
+#else
+#define DEBUG_SMS(...) ((void)0)
+#endif
+#if APP_DEBUG_BOOT_TRACE_ENABLED
+#define DEBUG_BOOT(text_literal) DEBUG_PRINT(text_literal)
+#else
+#define DEBUG_BOOT(...) ((void)0)
+#endif
+#else
+#define DEBUG_ERROR(...) ((void)0)
+#define DEBUG_SLEEP(...) ((void)0)
+#define DEBUG_CMD(...) ((void)0)
+#define DEBUG_CALL(...) ((void)0)
+#define DEBUG_SMS(...) ((void)0)
+#define DEBUG_BOOT(...) ((void)0)
 #endif
 
 ISR(WDT_vect) {
@@ -168,11 +212,9 @@ void configure_watchdog_8s_interrupt() {
 #error "Unsupported watchdog control register for this MCU"
 #endif
 }
-
 void disable_watchdog() {
 	wdt_disable();
 }
-
 void enter_deep_sleep() {
 	configure_watchdog_8s_interrupt();
 	set_sleep_mode(SLEEP_MODE_PWR_DOWN);
@@ -181,13 +223,11 @@ void enter_deep_sleep() {
 	sleep_disable();
 	disable_watchdog();
 }
-
 void clear_receive_buffer() {
 	while (sim_serial.available() > 0) {
 		sim_serial.read();
 	}
 }
-
 uint8_t read_response(char* buffer, uint8_t buffer_size, unsigned long timeout_ms) {
 	uint8_t position = 0U;
 	unsigned long start = millis();
@@ -217,7 +257,6 @@ uint8_t read_response(char* buffer, uint8_t buffer_size, unsigned long timeout_m
 	buffer[position] = SIM_CHAR_END_OF_STRING;
 	return position;
 }
-
 bool turn_off_sim_led() {
 	for (uint8_t attempt = 0U; attempt < SIM_NETLIGHT_MAX_ATTEMPTS; ++attempt) {
 		sim_serial.listen();
@@ -232,7 +271,6 @@ bool turn_off_sim_led() {
 
 	return false;
 }
-
 bool sim_800c_enter_sleep_mode() {
 	sim_serial.listen();
 	digitalWrite(SIM_SLEEP_PIN, LOW);
@@ -245,7 +283,6 @@ bool sim_800c_enter_sleep_mode() {
 	digitalWrite(SIM_SLEEP_PIN, HIGH);
 	return true;
 }
-
 bool sim_800c_exit_sleep_mode() {
 	sim_serial.listen();
 	digitalWrite(SIM_SLEEP_PIN, LOW);
@@ -254,7 +291,6 @@ bool sim_800c_exit_sleep_mode() {
 	send_at_cmd(SIM_SMS_CMD_BASIC_AT);
 	return wait_for_pattern(SIM_SMS_LITERAL_OK, SIM_SLEEP_CMD_TIMEOUT_MS);
 }
-
 int get_sms_count() {
 	sim_serial.listen();
 
@@ -273,7 +309,7 @@ int get_sms_count() {
 
 	const char* header = strstr(response_buffer, SIM_SMS_STORAGE_HEADER);
 	if (header == nullptr) {
-		DEBUG_FAIL("e_cpms_hdr");
+		DEBUG_ERROR("e_cpms_hdr");
 		return SIM_INVALID_SMS_COUNT;
 	}
 
@@ -283,7 +319,7 @@ int get_sms_count() {
 	}
 
 	if (*cursor != ',') {
-		DEBUG_FAIL("e_cpms_comma");
+		DEBUG_ERROR("e_cpms_comma");
 		return SIM_INVALID_SMS_COUNT;
 	}
 
@@ -297,13 +333,12 @@ int get_sms_count() {
 	}
 
 	if (!has_digit) {
-		DEBUG_FAIL("e_cpms_digit");
+		DEBUG_ERROR("e_cpms_digit");
 		return SIM_INVALID_SMS_COUNT;
 	}
 
 	return value;
 }
-
 bool read_sms(uint8_t index, char* message) {
 	sim_serial.listen();
 	message[0] = SIM_CHAR_END_OF_STRING;
@@ -410,14 +445,12 @@ bool read_sms(uint8_t index, char* message) {
 	message[message_pos] = SIM_CHAR_END_OF_STRING;
 	return message_pos > 0U;
 }
-
 bool delete_all_sms() {
 	sim_serial.listen();
 	clear_receive_buffer();
 	send_at_cmd(SIM_SMS_CMD_DELETE_ALL);
 	return wait_for_pattern(SIM_SMS_LITERAL_OK, SIM_SMS_STORAGE_TIMEOUT_MS);
 }
-
 bool store_phone_local_number_to_eeprom(const char* phone_local_number) {
 	if (phone_local_number[APP_PHONE_LOCAL_NUMBER_LENGTH] != SIM_CHAR_END_OF_STRING) {
 		return false;
@@ -439,103 +472,107 @@ bool store_phone_local_number_to_eeprom(const char* phone_local_number) {
 		static_cast<uint8_t>(SIM_CHAR_END_OF_STRING));
 	return true;
 }
-
 bool call_phone_number_from_eeprom() {
 	for (uint8_t index = 0U; index < APP_PHONE_LOCAL_NUMBER_LENGTH; ++index) {
 		uint8_t value = eeprom_read_byte(
 			reinterpret_cast<const uint8_t*>(static_cast<uint16_t>(EEPROM_PHONE_BASE_ADDRESS + index)));
 		char c = static_cast<char>(value);
 		if (c < '0' || c > '9') {
-			DEBUG_FAIL("e_call_num");
+			DEBUG_ERROR("e_call_num");
 			return false;
 		}
 	}
 
-	sim_serial.listen();
-	clear_receive_buffer();
-	sim_serial.write((uint8_t)'A');
-	sim_serial.write((uint8_t)'T');
-	sim_serial.write((uint8_t)'D');
-	sim_serial.write(APP_PHONE_COUNTRY_PREFIX_CHAR_1);
-	sim_serial.write(APP_PHONE_COUNTRY_PREFIX_CHAR_2);
-	sim_serial.write(APP_PHONE_COUNTRY_PREFIX_CHAR_3);
-	for (uint8_t index = 0U; index < APP_PHONE_LOCAL_NUMBER_LENGTH; ++index) {
-		uint8_t value = eeprom_read_byte(
-			reinterpret_cast<const uint8_t*>(static_cast<uint16_t>(EEPROM_PHONE_BASE_ADDRESS + index)));
-		sim_serial.write(value);
-	}
-	sim_serial.write((uint8_t)';');
-	sim_serial.write(SIM_CHAR_CARRIAGE_RETURN);
-	if (!wait_for_pattern(SIM_SMS_LITERAL_OK, SIM_CALL_START_TIMEOUT_MS)) {
-		DEBUG_FAIL("e_call_ok");
-		return false;
-	}
-	delay(SIM_CALL_POST_DIAL_DELAY_MS);
-	DEBUG_LOG("d_call_ok");
-	return true;
-}
+	for (uint8_t attempt = 0U; attempt < SIM_CALL_MAX_ATTEMPTS; ++attempt) {
+		sim_serial.listen();
+		clear_receive_buffer();
+		send_at_cmd(SIM_SMS_CMD_BASIC_AT);
+		wait_for_pattern(SIM_SMS_LITERAL_OK, SIM_SLEEP_CMD_TIMEOUT_MS);
 
+		clear_receive_buffer();
+		sim_serial.write((uint8_t)'A');
+		sim_serial.write((uint8_t)'T');
+		sim_serial.write((uint8_t)'D');
+		sim_serial.write(APP_PHONE_COUNTRY_PREFIX_CHAR_1);
+		sim_serial.write(APP_PHONE_COUNTRY_PREFIX_CHAR_2);
+		sim_serial.write(APP_PHONE_COUNTRY_PREFIX_CHAR_3);
+		for (uint8_t index = 0U; index < APP_PHONE_LOCAL_NUMBER_LENGTH; ++index) {
+			uint8_t value = eeprom_read_byte(
+				reinterpret_cast<const uint8_t*>(static_cast<uint16_t>(EEPROM_PHONE_BASE_ADDRESS + index)));
+			sim_serial.write(value);
+		}
+		sim_serial.write((uint8_t)';');
+		sim_serial.write(SIM_CHAR_CARRIAGE_RETURN);
+		if (wait_for_pattern(SIM_SMS_LITERAL_OK, SIM_CALL_START_TIMEOUT_MS)) {
+			delay(SIM_CALL_POST_DIAL_DELAY_MS);
+			DEBUG_CALL("d_call_ok");
+			return true;
+		}
+		delay(SIM_CALL_RETRY_DELAY_MS);
+	}
+
+	DEBUG_ERROR("e_call_ok");
+	return false;
+}
 bool set_auto_answer_mode(bool enabled) {
 	sim_serial.listen();
 	clear_receive_buffer();
 	send_at_cmd(enabled ? SIM_SMS_CMD_AUTO_ANSWER_3_RINGS : SIM_SMS_CMD_AUTO_ANSWER_DISABLED);
 	return wait_for_pattern(SIM_SMS_LITERAL_OK, SIM_SLEEP_CMD_TIMEOUT_MS);
 }
-
 void handle_sms_command(const char* message) {
 	if (message[0] == SIM_CHAR_END_OF_STRING) {
-		DEBUG_FAIL("e_cmd_empty");
+		DEBUG_ERROR("e_cmd_empty");
 		return;
 	}
 
 	if (message[0] == SMS_CMD_AUTO_ANSWER_ENABLE) {
-		DEBUG_LOG("d_cmd_1");
+		DEBUG_CMD("d_cmd_1");
 		if (!set_auto_answer_mode(true)) {
-			DEBUG_FAIL("e_ans_on");
+			DEBUG_ERROR("e_ans_on");
 			return;
 		}
 		sleep_mode_enabled = false;
 		sim800c_sleep_state = false;
 		watchdog_poll_elapsed_ticks = 0U;
-		DEBUG_LOG("d_ans_on");
+		DEBUG_CMD("d_ans_on");
 		if (!call_phone_number_from_eeprom()) {
-			DEBUG_FAIL("e_call_cmd");
+			DEBUG_ERROR("e_call_cmd");
 		}
 		return;
 	}
 
 	if (message[0] == SMS_CMD_AUTO_ANSWER_DISABLE) {
-		DEBUG_LOG("d_cmd_2");
+		DEBUG_CMD("d_cmd_2");
 		if (!set_auto_answer_mode(false)) {
-			DEBUG_FAIL("e_ans_off");
+			DEBUG_ERROR("e_ans_off");
 			return;
 		}
 		sleep_mode_enabled = true;
 		watchdog_poll_elapsed_ticks = 0U;
-		DEBUG_LOG("d_ans_off");
+		DEBUG_CMD("d_ans_off");
 		if (!call_phone_number_from_eeprom()) {
-			DEBUG_FAIL("e_call_cmd");
+			DEBUG_ERROR("e_call_cmd");
 		}
 		return;
 	}
 
 	if (message[0] != SMS_CMD_STORE_PHONE) {
-		DEBUG_FAIL("e_cmd_unk");
+		DEBUG_ERROR("e_cmd_unk");
 		return;
 	}
 
-	DEBUG_LOG("d_cmd_num");
+	DEBUG_CMD("d_cmd_num");
 	if (!store_phone_local_number_to_eeprom(message + 1)) {
-		DEBUG_FAIL("e_num_save");
+		DEBUG_ERROR("e_num_save");
 		return;
 	}
-	DEBUG_LOG("d_num_ok");
+	DEBUG_CMD("d_num_ok");
 
 	if (!call_phone_number_from_eeprom()) {
-		DEBUG_FAIL("e_call_cmd");
+		DEBUG_ERROR("e_call_cmd");
 	}
 }
-
 bool setup_sms_receiver() {
 	bool is_ok = true;
 
@@ -562,7 +599,6 @@ bool setup_sms_receiver() {
 	sms_receiver_initialized = is_ok;
 	return is_ok;
 }
-
 void setup() {
 	pinMode(SIM_SLEEP_PIN, OUTPUT);
 	digitalWrite(SIM_SLEEP_PIN, LOW);
@@ -575,31 +611,28 @@ void setup() {
 
 	bool is_led_off = turn_off_sim_led();
 	if (!is_led_off) {
-		DEBUG_FAIL("e_led");
+		DEBUG_ERROR("e_led");
 	}
 
 	bool is_sms_ready = setup_sms_receiver();
 	if (!is_sms_ready) {
-		DEBUG_FAIL("e_sms");
+		DEBUG_ERROR("e_sms");
 	}
 
 	bool is_sms_deleted = delete_all_sms();
 	if (!is_sms_deleted) {
-		DEBUG_FAIL("e_del");
+		DEBUG_ERROR("e_del");
 	}
 
 	if (!set_auto_answer_mode(false)) {
-		DEBUG_FAIL("e_ans_reset");
+		DEBUG_ERROR("e_ans_reset");
 	}
 	sleep_mode_enabled = true;
 
-	if (is_led_off && is_sms_ready && is_sms_deleted) {
-		if (!call_phone_number_from_eeprom()) {
-			DEBUG_FAIL("e_call_boot");
-		}
+	if (!call_phone_number_from_eeprom()) {
+		DEBUG_ERROR("e_call_boot");
 	}
 }
-
 void poll_sms_and_handle_if_any() {
 	int sms_count = get_sms_count();
 	if (sms_count > 0) {
@@ -619,26 +652,25 @@ void poll_sms_and_handle_if_any() {
 
 		if (is_sms_read) {
 			if (!delete_all_sms()) {
-				DEBUG_FAIL("e_del_loop");
+				DEBUG_ERROR("e_del_loop");
 			}
 			handle_sms_command(message);
 		}
 		else {
-			DEBUG_FAIL("e_sms_read");
+			DEBUG_ERROR("e_sms_read");
 		}
 	}
 }
-
 void loop() {
 	if (!sleep_mode_enabled) {
 		if (sim800c_sleep_state) {
-			DEBUG_LOG("d_sleep_out_try");
+			DEBUG_SLEEP("d_sleep_out_try");
 			if (sim_800c_exit_sleep_mode()) {
 				sim800c_sleep_state = false;
-				DEBUG_LOG("d_sleep_out_ok");
+				DEBUG_SLEEP("d_sleep_out_ok");
 			}
 			else {
-				DEBUG_FAIL("e_sleep_out");
+				DEBUG_ERROR("e_sleep_out");
 				delay(1000);
 				return;
 			}
@@ -654,10 +686,10 @@ void loop() {
 	if (!sim800c_sleep_state) {
 		if (sim_800c_enter_sleep_mode()) {
 			sim800c_sleep_state = true;
-			DEBUG_LOG("d_sleep_in_ok");
+			DEBUG_SLEEP("d_sleep_in_ok");
 		}
 		else {
-			DEBUG_FAIL("e_sleep_in");
+			DEBUG_ERROR("e_sleep_in");
 			delay(1000);
 			return;
 		}
@@ -680,13 +712,13 @@ void loop() {
 	watchdog_poll_elapsed_ticks = 0U;
 
 	if (sim800c_sleep_state) {
-		DEBUG_LOG("d_sleep_out_try");
+		DEBUG_SLEEP("d_sleep_out_try");
 		if (sim_800c_exit_sleep_mode()) {
 			sim800c_sleep_state = false;
-			DEBUG_LOG("d_sleep_out_ok");
+			DEBUG_SLEEP("d_sleep_out_ok");
 		}
 		else {
-			DEBUG_FAIL("e_sleep_out");
+			DEBUG_ERROR("e_sleep_out");
 			return;
 		}
 	}
