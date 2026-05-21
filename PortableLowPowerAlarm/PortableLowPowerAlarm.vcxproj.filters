@@ -19,8 +19,8 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="__vm\.PortableLowPowerAlarm.vsarduino.h" />
     <ClInclude Include="SoftwareSerial.h" />
+    <ClInclude Include="__vm\.PortableLowPowerAlarm.vsarduino.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="circuit">
