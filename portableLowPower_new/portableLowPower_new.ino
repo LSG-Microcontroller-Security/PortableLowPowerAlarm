@@ -112,7 +112,6 @@ void send_at_cmd(const char* cmd) {
 	sim_serial.print(cmd);
 	sim_serial.write(SIM_CHAR_CARRIAGE_RETURN);
 }
-
 bool wait_for_pattern(const char* pattern, unsigned long timeout_ms) {
 	const char* match = pattern;
 	unsigned long start = millis();
@@ -144,7 +143,6 @@ bool wait_for_pattern(const char* pattern, unsigned long timeout_ms) {
 
 	return false;
 }
-
 void configure_watchdog_8s_interrupt() {
 #if defined(MCUSR)
 	MCUSR &= static_cast<uint8_t>(~_BV(WDRF));
