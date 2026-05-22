@@ -166,7 +166,6 @@ void debug_print_fail(const __FlashStringHelper* fail_code) {
 ISR(WDT_vect) {
 	watchdog_wake_state = true;
 }
-
 void send_at_cmd(const char* cmd) {
 	sim_serial.print(cmd);
 	sim_serial.write(SIM_CHAR_CARRIAGE_RETURN);
