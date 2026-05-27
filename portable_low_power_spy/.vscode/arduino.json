@@ -1,0 +1,7 @@
+{
+    "configuration": "cpu=attiny85,clock=internal8",
+    "board": "attiny:avr:ATtinyX5",
+    "programmer": "attiny:usbtinyisp",
+    "sketch": "portable_low_power_spy.ino",
+    "port": "/dev/ttyS1"
+}
